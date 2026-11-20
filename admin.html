@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IACRM — Super Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --void:#020509;--deep:#04080f;--panel:#0a1828;--cyan:#00d4ff;--violet:#a855f7;
+  --green:#10b981;--red:#ef4444;--amber:#f59e0b;--text:#dceeff;--muted:#4d7a9e;
+  --dim:#122338;--b1:rgba(0,212,255,0.07);--b2:rgba(0,212,255,0.18);
+  --cdim:#122338;--ct:#dceeff;--cm:#4d7a9e;
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--void);color:var(--text);display:flex;height:100vh;overflow:hidden}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.004) 2px,rgba(0,212,255,0.004) 4px)}
+
+/* SIDEBAR */
+.sb{width:220px;min-width:220px;background:var(--deep);border-right:1px solid var(--b1);display:flex;flex-direction:column;z-index:10;padding:1.5rem 0}
+.sb-logo{font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;padding:0 1.25rem 1.5rem;letter-spacing:.06em;border-bottom:1px solid var(--b1);margin-bottom:1rem}
+.sb-logo .lia{background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sb-logo .sa-badge{font-size:.55rem;background:rgba(168,85,247,.2);color:#c084fc;border:1px solid rgba(168,85,247,.3);border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle}
+.sb-section{font-family:'Space Mono',monospace;font-size:.55rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:.75rem 1.25rem .35rem}
+.sb-item{display:flex;align-items:center;gap:.6rem;padding:.6rem 1.25rem;font-size:.82rem;cursor:pointer;transition:background .15s,color .15s;color:var(--muted);border-left:3px solid transparent}
+.sb-item:hover{background:var(--b1);color:var(--text)}
+.sb-item.active{background:rgba(0,212,255,.08);color:var(--cyan);border-left-color:var(--cyan)}
+.sb-ico{font-size:.9rem;width:18px;text-align:center}
+.sb-spacer{flex:1}
+.sb-user{display:flex;align-items:center;gap:.6rem;padding:1rem 1.25rem;border-top:1px solid var(--b1);cursor:pointer}
+.sb-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--violet),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:white}
+.sb-uname{font-size:.78rem;font-weight:600;color:var(--text)}
+.sb-urole{font-size:.62rem;color:#a855f7;font-family:'Space Mono',monospace}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;position:relative;z-index:1}
+.page{display:none;padding:2rem;min-height:100%}
+.page.active{display:block}
+
+/* HEADER */
+.pg-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem}
+.pg-title{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}
+.pg-title span{font-family:'Space Mono',monospace;font-size:.65rem;color:#a855f7;letter-spacing:.1em;text-transform:uppercase;margin-left:.5rem;opacity:.8}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1rem;border-radius:4px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:'Space Grotesk',sans-serif}
+.btn-primary{background:var(--cyan);color:#000}
+.btn-primary:hover{background:#fff}
+.btn-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+.btn-danger:hover{background:rgba(239,68,68,.25)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--cdim)}
+.btn-ghost:hover{color:var(--text);border-color:var(--b2)}
+.btn-success{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+.kpi-card{background:var(--panel);border:1px solid var(--b1);border-radius:10px;padding:1.25rem;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;right:0;width:50px;height:50px;background:linear-gradient(135deg,rgba(0,212,255,.06),transparent);border-radius:0 10px 0 50px}
+.kpi-label{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem}
+.kpi-val{font-size:2rem;font-weight:800;line-height:1}
+.kpi-sub{font-size:.7rem;color:var(--muted);margin-top:.4rem}
+
+/* TABLE */
+.tw{overflow-x:auto;border:1px solid var(--b1);border-radius:10px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding:.75rem 1rem;border-bottom:1px solid var(--b1);text-align:left;background:rgba(0,0,0,.2)}
+.tbl td{padding:.75rem 1rem;border-bottom:1px solid rgba(18,35,56,.5);font-size:.82rem;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(0,212,255,.02)}
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:99px;font-size:.68rem;font-weight:600;font-family:'Space Mono',monospace}
+.b-green{background:rgba(16,185,129,.15);color:#34d399}
+.b-amber{background:rgba(245,158,11,.15);color:#fbbf24}
+.b-red{background:rgba(239,68,68,.15);color:#f87171}
+.b-muted{background:rgba(77,122,158,.1);color:var(--muted)}
+.b-violet{background:rgba(168,85,247,.15);color:#c084fc}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--b2);border-radius:12px;max-width:560px;width:100%;box-shadow:0 0 60px rgba(0,212,255,.08)}
+.mhdr{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--b1)}
+.mhdr h2{font-size:.95rem;font-weight:700;letter-spacing:-.01em}
+.mclose{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px;line-height:1}
+.mclose:hover{color:var(--text)}
+.mbody{padding:1.5rem}
+.mfoot{padding:1rem 1.5rem;border-top:1px solid var(--b1);display:flex;justify-content:flex-end;gap:.5rem}
+.form-label{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.4rem}
+.form-input{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--cdim);border-radius:4px;padding:.7rem .9rem;color:var(--text);font-size:.88rem;font-family:'Space Grotesk',sans-serif;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--b2)}
+.form-group{margin-bottom:1rem}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem}
+.toast{padding:.7rem 1.1rem;border-radius:6px;font-size:.8rem;font-weight:500;animation:toastIn .25s ease;max-width:320px}
+.toast.ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#6ee7b7}
+.toast.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sb">
+  <div class="sb-logo"><span class="lia">IA</span>CRM<span class="sa-badge">SUPER ADMIN</span></div>
+  <div class="sb-section">Visão Geral</div>
+  <a class="sb-item active" onclick="showPage('dashboard',this)"><span class="sb-ico">📡</span>Dashboard</a>
+  <a class="sb-item" onclick="showPage('tenants',this)"><span class="sb-ico">🏢</span>Clientes</a>
+  <div class="sb-section">Sistema</div>
+  <a class="sb-item" onclick="showPage('criar-tenant',this)"><span class="sb-ico">➕</span>Novo Cliente</a>
+  <a class="sb-item" onclick="showPage('config',this)"><span class="sb-ico">⚙️</span>Configurações</a>
+  <div class="sb-spacer"></div>
+  <div class="sb-user" onclick="logout()">
+    <div class="sb-avatar" id="sa-av">SA</div>
+    <div><div class="sb-uname" id="sa-name">Super Admin</div><div class="sb-urole">superadmin</div></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="pg-hdr">
+      <div class="pg-title">Dashboard <span>// SUPER ADMIN</span></div>
+      <button class="btn btn-ghost" onclick="loadDashboard()">↻ Atualizar</button>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total de Clientes</div>
+        <div class="kpi-val" style="color:var(--cyan)" id="sa-tenants">—</div>
+        <div class="kpi-sub">tenants ativos</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">MRR Total</div>
+        <div class="kpi-val" style="color:var(--green)" id="sa-mrr">—</div>
+        <div class="kpi-sub">receita mensal recorrente</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total de Leads</div>
+        <div class="kpi-val" style="color:var(--amber)" id="sa-leads">—</div>
+        <div class="kpi-sub">em todos os tenants</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Usuários Ativos</div>
+        <div class="kpi-val" style="color:var(--violet)" id="sa-usuarios">—</div>
+        <div class="kpi-sub">total de usuários</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem">
+      <div class="kpi-card" style="cursor:pointer" onclick="filtrarTenants('ativo')">
+        <div class="kpi-label">✅ Ativos</div>
+        <div class="kpi-val" style="color:var(--green);font-size:1.5rem" id="sa-ativos">—</div>
+      </div>
+      <div class="kpi-card" style="cursor:pointer" onclick="filtrarTenants('trial')">
+        <div class="kpi-label">🟡 Trial</div>
+        <div class="kpi-val" style="color:var(--amber);font-size:1.5rem" id="sa-trial">—</div>
+      </div>
+      <div class="kpi-card" style="cursor:pointer" onclick="filtrarTenants('suspenso')">
+        <div class="kpi-label">🔴 Suspensos</div>
+        <div class="kpi-val" style="color:var(--red);font-size:1.5rem" id="sa-suspensos">—</div>
+      </div>
+    </div>
+    <!-- Últimos clientes -->
+    <h3 style="font-size:.85rem;font-weight:700;margin-bottom:.75rem;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:.06em;text-transform:uppercase">// CLIENTES RECENTES</h3>
+    <div class="tw"><table class="tbl">
+      <thead><tr><th>Empresa</th><th>Plano</th><th>Status</th><th>Leads</th><th>Clientes</th><th>Criado em</th><th>Ações</th></tr></thead>
+      <tbody id="sa-tenants-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Carregando...</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- CLIENTES (TENANTS) -->
+  <div class="page" id="page-tenants">
+    <div class="pg-hdr">
+      <div class="pg-title">Clientes <span>// TODOS OS TENANTS</span></div>
+      <div style="display:flex;gap:.5rem">
+        <input type="text" id="tenant-search" placeholder="🔍 Buscar..." style="background:var(--panel);border:1px solid var(--cdim);border-radius:4px;padding:.5rem .75rem;color:var(--text);font-size:.8rem;width:200px" oninput="renderTenants()">
+        <button class="btn btn-primary" onclick="showPage('criar-tenant',null)">+ Novo Cliente</button>
+      </div>
+    </div>
+    <div class="tw"><table class="tbl">
+      <thead><tr><th>Empresa</th><th>Slug</th><th>Plano</th><th>Status</th><th>Leads</th><th>Usuários</th><th>Criado</th><th>Ações</th></tr></thead>
+      <tbody id="all-tenants-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Carregando...</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- CRIAR TENANT -->
+  <div class="page" id="page-criar-tenant">
+    <div class="pg-hdr">
+      <div class="pg-title">Novo Cliente <span>// ONBOARDING MANUAL</span></div>
+    </div>
+    <div style="max-width:520px;background:var(--panel);border:1px solid var(--b1);border-radius:12px;padding:2rem">
+      <div class="form-group"><label class="form-label">Nome da empresa *</label><input id="ct-nome" class="form-input" placeholder="Ex: IA LICITA"></div>
+      <div class="form-group"><label class="form-label">Slug (URL) *</label><input id="ct-slug" class="form-input" placeholder="ia-licita" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')"></div>
+      <div class="form-group"><label class="form-label">Plano</label>
+        <select id="ct-plano" class="form-input">
+          <option value="free">Free (R$0)</option>
+          <option value="starter">Starter (R$97/mês)</option>
+          <option value="pro">Pro (R$197/mês)</option>
+          <option value="enterprise">Enterprise (R$497/mês)</option>
+        </select>
+      </div>
+      <div style="border-top:1px solid var(--b1);padding-top:1rem;margin-top:1rem;margin-bottom:1rem">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:1rem;font-family:'Space Mono',monospace">// ADMIN DO CLIENTE</p>
+        <div class="form-group"><label class="form-label">Nome do admin *</label><input id="ct-admin-nome" class="form-input" placeholder="João Silva"></div>
+        <div class="form-group"><label class="form-label">E-mail *</label><input id="ct-admin-email" class="form-input" placeholder="joao@empresa.com" type="email"></div>
+        <div class="form-group"><label class="form-label">Senha *</label><input id="ct-admin-senha" class="form-input" placeholder="Mínimo 6 caracteres" type="password"></div>
+      </div>
+      <button class="btn btn-primary" onclick="criarTenant()" style="width:100%">🚀 Criar Cliente</button>
+    </div>
+  </div>
+
+  <!-- CONFIGURAÇÕES -->
+  <div class="page" id="page-config">
+    <div class="pg-hdr">
+      <div class="pg-title">Configurações <span>// SUPER ADMIN</span></div>
+    </div>
+    <div style="max-width:480px;background:var(--panel);border:1px solid var(--b1);border-radius:12px;padding:2rem">
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:1rem;font-family:'Space Mono',monospace">// ALTERAR SENHA</p>
+      <div class="form-group"><label class="form-label">Nova senha</label><input id="sa-nova-senha" class="form-input" type="password" placeholder="Nova senha"></div>
+      <div class="form-group"><label class="form-label">Confirmar</label><input id="sa-conf-senha" class="form-input" type="password" placeholder="Confirmar senha"></div>
+      <button class="btn btn-primary" onclick="alterarSenhaSA()">Salvar senha</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL DETALHE TENANT -->
+<div class="overlay" id="modal-tenant">
+  <div class="modal" style="max-width:640px">
+    <div class="mhdr"><h2 id="mt-title">Cliente</h2><button class="mclose" onclick="closeModal()">×</button></div>
+    <div class="mbody" id="mt-body"></div>
+    <div class="mfoot">
+      <button class="btn btn-danger" id="mt-suspender" onclick="toggleTenantStatus()">Suspender</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+const API = '/api/crm';
+const TOKEN = localStorage.getItem('iacrm_token');
+const USER = JSON.parse(localStorage.getItem('iacrm_user') || '{}');
+
+// Verificar acesso
+if (!TOKEN) { window.location.href = '/login'; }
+if (USER.papel !== 'superadmin') { window.location.href = '/painel'; }
+
+let TENANTS = [];
+let CURRENT_TENANT = null;
+
+function hdr() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN }; }
+
+async function api(path, method = 'GET', body) {
+  try {
+    const r = await fetch(API + path, { method, headers: hdr(), body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 401) { localStorage.clear(); window.location.href = '/login'; return null; }
+    return await r.json();
+  } catch { return null; }
+}
+
+function toast(msg, type = 'ok') {
+  const w = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  w.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  if (el) el.classList.add('active');
+  const loaders = { dashboard: loadDashboard, tenants: loadTenants };
+  if (loaders[name]) loaders[name]();
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/login';
+}
+
+function fmtDt(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('pt-BR');
+}
+
+function statusBadge(s) {
+  const m = { ativo: ['✅ Ativo','b-green'], trial: ['🟡 Trial','b-amber'], suspenso: ['🔴 Suspenso','b-red'], cancelado: ['⬛ Cancelado','b-muted'] };
+  const [label, cls] = m[s] || ['❓ '+s, 'b-muted'];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function planoBadge(p) {
+  const m = { free: 'b-muted', starter: 'b-green', pro: 'b-amber', enterprise: 'b-violet' };
+  return `<span class="badge ${m[p]||'b-muted'}">${(p||'free').toUpperCase()}</span>`;
+}
+
+// ── INIT ──
+document.getElementById('sa-av').textContent = (USER.nome||'SA').substring(0,2).toUpperCase();
+document.getElementById('sa-name').textContent = USER.nome || 'Super Admin';
+loadDashboard();
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  const [d, t] = await Promise.all([api('/superadmin/dashboard'), api('/superadmin/tenants')]);
+  if (d?.data) {
+    const { totalTenants, mrr, totalLeads, totalUsuarios, ativos, trial, suspensos } = d.data;
+    document.getElementById('sa-tenants').textContent = totalTenants || 0;
+    document.getElementById('sa-mrr').textContent = 'R$' + (mrr >= 1000 ? (mrr/1000).toFixed(1)+'k' : mrr);
+    document.getElementById('sa-leads').textContent = totalLeads || 0;
+    document.getElementById('sa-usuarios').textContent = totalUsuarios || 0;
+    document.getElementById('sa-ativos').textContent = ativos || 0;
+    document.getElementById('sa-trial').textContent = trial || 0;
+    document.getElementById('sa-suspensos').textContent = suspensos || 0;
+  }
+  if (t?.data) {
+    TENANTS = t.data;
+    const tbody = document.getElementById('sa-tenants-tbody');
+    const recent = TENANTS.slice(0, 5);
+    tbody.innerHTML = recent.map(t => `
+      <tr>
+        <td><div style="font-weight:600">${t.nome}</div></td>
+        <td>${planoBadge(t.plano)}</td>
+        <td>${statusBadge(t.plano_status)}</td>
+        <td style="font-weight:600;color:var(--cyan)">${t._leads || 0}</td>
+        <td>${t._clientes || 0}</td>
+        <td style="font-size:.75rem;color:var(--muted)">${fmtDt(t.created_at)}</td>
+        <td><button class="btn btn-ghost" style="font-size:.7rem;padding:.3rem .6rem" onclick="abrirTenant('${t.id}')">Ver</button></td>
+      </tr>`).join('');
+  }
+}
+
+// ── TENANTS ──
+async function loadTenants() {
+  const d = await api('/superadmin/tenants');
+  if (d?.data) { TENANTS = d.data; renderTenants(); }
+}
+
+function renderTenants() {
+  const search = (document.getElementById('tenant-search')?.value || '').toLowerCase();
+  const filtered = TENANTS.filter(t => !search || t.nome.toLowerCase().includes(search) || t.slug.toLowerCase().includes(search));
+  const tbody = document.getElementById('all-tenants-tbody');
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Nenhum cliente encontrado.</td></tr>'; return; }
+  tbody.innerHTML = filtered.map(t => `
+    <tr>
+      <td><div style="font-weight:600">${t.nome}</div></td>
+      <td><span style="font-family:monospace;font-size:.75rem;color:var(--muted)">${t.slug}</span></td>
+      <td>${planoBadge(t.plano)}</td>
+      <td>${statusBadge(t.plano_status)}</td>
+      <td style="font-weight:600;color:var(--cyan)">${t._leads || 0}</td>
+      <td>${t._usuarios || 0}</td>
+      <td style="font-size:.75rem;color:var(--muted)">${fmtDt(t.created_at)}</td>
+      <td>
+        <button class="btn btn-ghost" style="font-size:.7rem;padding:.3rem .6rem" onclick="abrirTenant('${t.id}')">Detalhes</button>
+      </td>
+    </tr>`).join('');
+}
+
+function filtrarTenants(status) {
+  showPage('tenants', document.querySelector('.sb-item:nth-child(3)'));
+  setTimeout(() => {
+    const search = document.getElementById('tenant-search');
+    if (search) { search.value = status; renderTenants(); }
+  }, 100);
+}
+
+// ── DETALHE TENANT ──
+async function abrirTenant(tenantId) {
+  CURRENT_TENANT = null;
+  document.getElementById('mt-body').innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted)">Carregando...</div>';
+  document.getElementById('modal-tenant').classList.add('open');
+  const d = await api('/superadmin/tenants/' + tenantId);
+  if (!d?.data) { document.getElementById('mt-body').innerHTML = '<p style="color:var(--red)">Erro ao carregar.</p>'; return; }
+  const { tenant, usuarios, apiKeys } = d.data;
+  CURRENT_TENANT = tenant;
+  document.getElementById('mt-title').textContent = tenant.nome;
+  const btn = document.getElementById('mt-suspender');
+  if (tenant.plano_status === 'suspenso') { btn.textContent = '✅ Reativar'; btn.className = 'btn btn-success'; }
+  else { btn.textContent = '🔴 Suspender'; btn.className = 'btn btn-danger'; }
+  document.getElementById('mt-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div><div class="form-label">ID</div><div style="font-family:monospace;font-size:.7rem;color:var(--muted)">${tenant.id}</div></div>
+      <div><div class="form-label">Slug</div><div style="font-family:monospace;font-size:.8rem">${tenant.slug}</div></div>
+      <div><div class="form-label">Plano</div><div>${planoBadge(tenant.plano)}</div></div>
+      <div><div class="form-label">Status</div><div>${statusBadge(tenant.plano_status)}</div></div>
+      <div><div class="form-label">Criado em</div><div style="font-size:.8rem">${fmtDt(tenant.created_at)}</div></div>
+      <div><div class="form-label">Trial até</div><div style="font-size:.8rem">${fmtDt(tenant.trial_fim) || '—'}</div></div>
+    </div>
+    <div style="border-top:1px solid var(--b1);padding-top:1rem;margin-bottom:1rem">
+      <div class="form-label" style="margin-bottom:.5rem">Usuários (${(usuarios||[]).length})</div>
+      ${(usuarios||[]).map(u => `<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid rgba(18,35,56,.4)">
+        <span style="font-size:.82rem;flex:1;font-weight:600">${u.nome}</span>
+        <span style="font-size:.72rem;color:var(--muted)">${u.email}</span>
+        <span class="badge ${u.papel==='admin'?'b-violet':'b-muted'}">${u.papel}</span>
+      </div>`).join('')}
+    </div>
+    <div style="border-top:1px solid var(--b1);padding-top:1rem">
+      <div class="form-label" style="margin-bottom:.5rem">API Keys (${(apiKeys||[]).length})</div>
+      ${(apiKeys||[]).map(k => `<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0">
+        <span style="font-size:.8rem;flex:1">${k.nome}</span>
+        <span class="badge ${k.ativo?'b-green':'b-muted'}">${k.ativo?'ATIVA':'REVOGADA'}</span>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:.8rem">Nenhuma API Key</div>'}
+    </div>`;
+}
+
+async function toggleTenantStatus() {
+  if (!CURRENT_TENANT) return;
+  const novoStatus = CURRENT_TENANT.plano_status === 'suspenso' ? 'ativo' : 'suspenso';
+  if (!confirm(`${novoStatus === 'suspenso' ? 'Suspender' : 'Reativar'} o cliente "${CURRENT_TENANT.nome}"?`)) return;
+  const r = await api('/superadmin/tenants/' + CURRENT_TENANT.id + '/status', 'PUT', { status: novoStatus });
+  if (r?.ok) { toast(`Cliente ${novoStatus === 'suspenso' ? 'suspenso' : 'reativado'}!`); closeModal(); loadDashboard(); }
+  else toast('Erro ao atualizar status', 'err');
+}
+
+function closeModal() { document.getElementById('modal-tenant').classList.remove('open'); }
+
+// ── CRIAR TENANT ──
+async function criarTenant() {
+  const nome = document.getElementById('ct-nome').value.trim();
+  const slug = document.getElementById('ct-slug').value.trim();
+  const plano = document.getElementById('ct-plano').value;
+  const adminNome = document.getElementById('ct-admin-nome').value.trim();
+  const adminEmail = document.getElementById('ct-admin-email').value.trim();
+  const adminSenha = document.getElementById('ct-admin-senha').value;
+  if (!nome || !slug || !adminNome || !adminEmail || !adminSenha) { toast('Preencha todos os campos', 'err'); return; }
+  const r = await api('/tenant/criar', 'POST', { nome, slug, plano, adminNome, adminEmail, adminSenha });
+  if (r?.ok) { toast('Cliente criado! ✅'); ['ct-nome','ct-slug','ct-admin-nome','ct-admin-email','ct-admin-senha'].forEach(id => document.getElementById(id).value = ''); showPage('tenants', null); }
+  else toast('Erro: ' + (r?.error || ''), 'err');
+}
+
+// ── ALTERAR SENHA ──
+async function alterarSenhaSA() {
+  const nova = document.getElementById('sa-nova-senha').value;
+  const conf = document.getElementById('sa-conf-senha').value;
+  if (!nova || nova !== conf) { toast('Senhas não coincidem', 'err'); return; }
+  const r = await api('/auth/usuarios/' + USER.id + '/senha', 'PUT', { novaSenha: nova });
+  if (r?.ok) toast('Senha alterada!'); else toast('Erro ao alterar senha', 'err');
+}
+</script>
+</body>
+</html>

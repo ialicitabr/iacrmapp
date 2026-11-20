@@ -1,0 +1,13 @@
+{
+  "name": "zapcrm-saas",
+  "version": "1.0.0",
+  "description": "CRM SaaS com WhatsApp, IA e automações para PMEs brasileiras",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

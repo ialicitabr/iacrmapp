@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IACRM — Inteligência Comportamental Neural</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --void:#000305;
+  --deep:#020810;
+  --surface:#050f1e;
+  --panel:#071525;
+  --cyan:#00ffe5;
+  --cyan2:#00c4ff;
+  --violet:#7c3aed;
+  --amber:#ffaa00;
+  --red:#ff3b3b;
+  --green:#00ff88;
+  --text:#e8f4ff;
+  --muted:#4a7a9b;
+  --dim:#0a1f35;
+}
+html{scroll-behavior:smooth;font-size:17px}
+body{font-family:'Inter',sans-serif;background:var(--void);color:var(--text);overflow-x:hidden;cursor:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;line-height:1.6}
+
+/* ── CURSOR ── */
+#cursor{position:fixed;width:12px;height:12px;border-radius:50%;background:var(--cyan);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .2s,height .2s,background .2s;mix-blend-mode:screen}
+#cursor-ring{position:fixed;width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,255,229,.3);pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .12s ease;mix-blend-mode:screen}
+body:hover #cursor{opacity:1}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1.25rem 4rem;display:flex;align-items:center;justify-content:space-between;background:rgba(0,3,5,.7);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,255,229,.06)}
+.nav-logo{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:500;letter-spacing:.05em;display:flex;align-items:center;gap:.4rem}
+.nl-ia{color:var(--cyan)}
+.nl-crm{color:var(--text)}
+.nl-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);text-decoration:none;letter-spacing:.08em;text-transform:uppercase;transition:color .2s}
+.nav-links a:hover{color:var(--cyan)}
+.nav-cta{display:flex;gap:.75rem}
+.btn-ghost{font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:.55rem 1.25rem;border:1px solid rgba(0,255,229,.2);border-radius:2px;color:var(--muted);background:none;cursor:none;letter-spacing:.08em;text-transform:uppercase;transition:all .2s;text-decoration:none}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn-primary{font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:.55rem 1.5rem;border:none;border-radius:2px;background:var(--cyan);color:#000;cursor:none;letter-spacing:.08em;text-transform:uppercase;font-weight:500;transition:all .2s;text-decoration:none}
+.btn-primary:hover{background:#fff;box-shadow:0 0 30px rgba(0,255,229,.4)}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;padding:8rem 4rem 4rem;text-align:center;overflow:hidden}
+
+/* Scan line */
+.scanline{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:scan 4s linear infinite;z-index:2;opacity:.4}
+@keyframes scan{0%{top:-2px}100%{top:100%}}
+
+.hero-content{position:relative;z-index:10;max-width:900px}
+.hero-tag{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--cyan);letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.5rem;opacity:0;animation:fadeUp .8s .3s forwards}
+.hero-tag::before{content:'// '}
+
+.hero-title{font-family:'Roboto',sans-serif;font-size:clamp(2.2rem,4.5vw,4rem);font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-bottom:1.75rem;opacity:0;animation:fadeUp .8s .5s forwards}
+.ht-line1{display:block;color:var(--text)}
+.ht-line2{display:block;color:transparent;-webkit-text-stroke:1px rgba(0,255,229,.4)}
+.ht-line3{display:block;background:linear-gradient(135deg,var(--cyan),var(--cyan2),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.hero-sub{font-family:'Inter',sans-serif;font-size:1.15rem;color:rgba(184,214,240,.85);font-weight:400;line-height:1.78;max-width:580px;margin:0 auto 2.5rem;opacity:0;animation:fadeUp .8s .7s forwards;letter-spacing:-.01em}
+
+/* Typewriter IA — container abaixo do hero-sub */
+.hero-typewriter{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--cyan);letter-spacing:.04em;margin-bottom:2.5rem;opacity:0;animation:fadeUp .8s .85s forwards;min-height:1.4rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.tw-prefix{color:rgba(0,255,229,.4);font-size:.72rem}
+.tw-text{color:var(--cyan)}
+.tw-cursor{display:inline-block;width:2px;height:1em;background:var(--cyan);animation:twblink .7s infinite;vertical-align:middle;margin-left:2px}
+@keyframes twblink{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+.hero-btns{display:flex;gap:1rem;justify-content:center;opacity:0;animation:fadeUp .8s .9s forwards}
+.hero-btns .btn-primary{padding:.8rem 2.5rem;font-size:.78rem}
+.hero-btns .btn-ghost{padding:.8rem 2rem;font-size:.78rem}
+
+/* Stats bar */
+.hero-stats{display:flex;gap:3rem;justify-content:center;margin-top:4rem;padding-top:2rem;border-top:1px solid rgba(0,255,229,.08);opacity:0;animation:fadeUp .8s 1.1s forwards}
+.stat-item{text-align:center}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:500;color:var(--cyan);display:block;line-height:1}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:.4rem}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── AGENTS SECTION ── */
+.section{padding:7rem 4rem;position:relative}
+.sec-header{margin-bottom:4rem;max-width:600px}
+.sec-tag{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--cyan);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.75rem}
+.sec-tag::before{content:'// '}
+.sec-title{font-family:'Roboto',sans-serif;font-size:clamp(1.6rem,3vw,2.4rem);font-weight:900;line-height:1.1;letter-spacing:-.02em}
+.sec-sub{font-family:'Inter',sans-serif;font-size:1.05rem;color:rgba(184,214,240,.75);line-height:1.75;margin-top:.9rem;font-weight:400;letter-spacing:-.01em}
+
+/* Agent cards */
+.agents-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(0,255,229,.06)}
+.agent-card{background:var(--deep);padding:2rem 1.75rem;position:relative;overflow:hidden;transition:background .3s;cursor:none}
+.agent-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,255,229,.04),transparent);opacity:0;transition:opacity .3s}
+.agent-card:hover{background:var(--surface)}
+.agent-card:hover::before{opacity:1}
+.ac-num{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:rgba(0,255,229,.25);letter-spacing:.1em;margin-bottom:1.25rem}
+.ac-icon{width:40px;height:40px;margin-bottom:1.25rem;position:relative}
+.ac-icon svg{width:40px;height:40px}
+.ac-title{font-family:'Inter',sans-serif;font-size:1.1rem;font-weight:600;margin-bottom:.65rem;letter-spacing:-.02em;color:var(--text)}
+.ac-desc{font-family:'Inter',sans-serif;font-size:.9rem;color:rgba(184,214,240,.7);line-height:1.7;font-weight:400}
+.ac-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.58rem;padding:.22rem .65rem;border-radius:1px;margin-top:1rem;letter-spacing:.08em;text-transform:uppercase}
+.badge-live{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.2)}
+.badge-beta{background:rgba(124,58,237,.1);color:#a78bfa;border:1px solid rgba(124,58,237,.2)}
+.badge-new{background:rgba(255,170,0,.1);color:var(--amber);border:1px solid rgba(255,170,0,.2)}
+
+/* Agent glow line on hover */
+.agent-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);transform:scaleX(0);transition:transform .4s}
+.agent-card:hover::after{transform:scaleX(1)}
+
+/* ── HEATMAP SECTION ── */
+.heatmap-section{padding:7rem 4rem;background:var(--deep);position:relative;overflow:hidden}
+.heatmap-wrap{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.hm-canvas-wrap{position:relative;border:1px solid rgba(0,255,229,.1);border-radius:4px;overflow:hidden;background:#020c1a}
+#world-heatmap{width:100%;display:block}
+.hm-overlay{position:absolute;inset:0;pointer-events:none}
+.hm-scan{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,229,.5),transparent);animation:hmscan 3s linear infinite}
+@keyframes hmscan{0%{top:0}100%{top:100%}}
+.hm-legend{display:flex;gap:1rem;margin-top:1rem;justify-content:flex-end}
+.hm-leg-item{display:flex;align-items:center;gap:.4rem;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted)}
+.hm-dot{width:8px;height:8px;border-radius:50%}
+
+.hm-stats{display:flex;flex-direction:column;gap:1.25rem;margin-top:2.5rem}
+.hm-stat{background:var(--surface);border:1px solid rgba(0,255,229,.06);padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
+.hms-label{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:.06em}
+.hms-val{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:500;color:var(--cyan)}
+.hms-bar{height:2px;background:rgba(0,255,229,.1);margin-top:.5rem;border-radius:1px;overflow:hidden}
+.hms-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:1px;transition:width 2s ease}
+
+/* ── AUTOMAÇÕES ── */
+.auto-section{padding:7rem 4rem}
+.pipeline-visual{margin-top:3rem;position:relative}
+.pipeline-track{display:flex;align-items:center;gap:0;position:relative}
+.pipeline-track::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--cyan));opacity:.2;z-index:0}
+
+.pip-node{background:var(--surface);border:1px solid rgba(0,255,229,.1);padding:1.25rem 1rem;flex:1;position:relative;z-index:1;text-align:center;transition:all .3s;cursor:none}
+.pip-node:hover{border-color:var(--cyan);background:var(--panel)}
+.pip-node-ico{font-size:1.5rem;margin-bottom:.5rem}
+.pip-node-title{font-size:.78rem;font-weight:700;margin-bottom:.25rem}
+.pip-node-sub{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.04em}
+.pip-arrow{color:rgba(0,255,229,.3);font-size:.9rem;padding:0 .25rem;flex-shrink:0;z-index:1}
+
+.auto-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;margin-top:3rem}
+.auto-card{background:var(--surface);border:1px solid rgba(0,255,229,.06);padding:1.75rem;transition:border-color .3s;position:relative;overflow:hidden}
+.auto-card:hover{border-color:rgba(0,255,229,.2)}
+.auto-card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem}
+.ac-status{display:flex;align-items:center;gap:.4rem;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--green)}
+.ac-status::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+.auto-card-title{font-family:'Inter',sans-serif;font-size:1.05rem;font-weight:600;margin-bottom:.4rem;letter-spacing:-.015em}
+.auto-card-desc{font-family:'Inter',sans-serif;font-size:.92rem;color:rgba(184,214,240,.7);line-height:1.7}
+.auto-card-metric{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:500;color:var(--cyan);margin-top:1rem}
+.auto-card-metric-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:.2rem}
+
+/* ── NEURAL SECTION ── */
+.neural-section{padding:7rem 4rem;background:var(--deep);position:relative;overflow:hidden}
+#neural-bg{position:absolute;inset:0;z-index:0}
+.neural-content{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center}
+.neural-viz{position:relative;height:400px}
+#neural-viz-canvas{width:100%;height:100%;display:block}
+
+.neural-features{display:flex;flex-direction:column;gap:1.5rem}
+.nf-item{display:flex;gap:1.25rem;align-items:flex-start;padding:1.25rem;background:rgba(0,255,229,.02);border:1px solid rgba(0,255,229,.06);transition:border-color .3s}
+.nf-item:hover{border-color:rgba(0,255,229,.2)}
+.nf-ico{width:36px;height:36px;flex-shrink:0;border:1px solid rgba(0,255,229,.2);display:flex;align-items:center;justify-content:center;font-size:1rem}
+.nf-title{font-family:'Inter',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.3rem;letter-spacing:-.01em}
+.nf-desc{font-family:'Inter',sans-serif;font-size:.88rem;color:rgba(184,214,240,.7);line-height:1.68}
+
+/* ── PRICING ── */
+.pricing-section{padding:7rem 4rem;text-align:center}
+.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(0,255,229,.06);margin-top:3rem;max-width:1100px;margin-left:auto;margin-right:auto}
+.price-card{background:var(--deep);padding:2rem 1.5rem;text-align:left;position:relative;transition:background .3s}
+.price-card:hover{background:var(--surface)}
+.price-card.popular{background:var(--surface);border:1px solid rgba(0,255,229,.2)}
+.pc-tag{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem}
+.pc-price{font-family:'JetBrains Mono',monospace;margin-bottom:1.25rem}
+.pc-val{font-size:2.2rem;font-weight:500;color:var(--text)}
+.pc-per{font-size:.72rem;color:var(--muted)}
+.pc-name{font-family:'Inter',sans-serif;font-size:1.15rem;font-weight:600;margin-bottom:.75rem;letter-spacing:-.015em}
+.pc-features{list-style:none;display:flex;flex-direction:column;gap:.55rem;margin-bottom:1.5rem}
+.pc-features li{font-family:'Inter',sans-serif;font-size:.88rem;color:rgba(184,214,240,.75);padding-left:1.1rem;position:relative;line-height:1.5}
+.pc-features li::before{content:'→';position:absolute;left:0;color:var(--cyan);font-size:.7rem;font-family:'JetBrains Mono',monospace}
+.pc-cta{display:block;font-family:'JetBrains Mono',monospace;font-size:.68rem;padding:.65rem;text-align:center;border:1px solid rgba(0,255,229,.2);color:var(--muted);text-decoration:none;letter-spacing:.06em;transition:all .2s}
+.pc-cta:hover,.price-card.popular .pc-cta{background:var(--cyan);color:#000;border-color:var(--cyan)}
+.popular-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#000;font-family:'JetBrains Mono',monospace;font-size:.58rem;padding:.2rem .75rem;letter-spacing:.08em}
+
+/* ── CTA FINAL ── */
+.cta-section{padding:7rem 4rem;text-align:center;position:relative;overflow:hidden}
+#cta-canvas{position:absolute;inset:0}
+.cta-content{position:relative;z-index:1}
+.cta-title{font-family:'Roboto',sans-serif;font-size:clamp(2rem,4vw,3.5rem);font-weight:900;letter-spacing:-.02em;line-height:1.05;margin-bottom:1.5rem}
+.cta-sub{font-size:1rem;color:var(--muted);margin-bottom:2.5rem}
+.cta-btns{display:flex;gap:1rem;justify-content:center}
+
+/* ── FOOTER ── */
+footer{padding:2rem 4rem;border-top:1px solid rgba(0,255,229,.06);display:flex;align-items:center;justify-content:space-between}
+.footer-logo{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--muted)}
+.footer-links{display:flex;gap:1.5rem}
+.footer-links a{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);text-decoration:none;letter-spacing:.06em;transition:color .2s}
+.footer-links a:hover{color:var(--cyan)}
+.footer-copy{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:rgba(74,122,155,.5)}
+
+/* ── AGENTE IA ── */
+#agent-btn{
+  position:fixed;bottom:2rem;right:2rem;z-index:1000;
+  width:62px;height:62px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 0 rgba(0,255,229,.4);
+  animation:agentPulse 2.5s infinite;
+  transition:transform .2s;
+}
+#agent-btn:hover{transform:scale(1.1)}
+@keyframes agentPulse{
+  0%{box-shadow:0 0 0 0 rgba(0,255,229,.5)}
+  70%{box-shadow:0 0 0 18px rgba(0,255,229,0)}
+  100%{box-shadow:0 0 0 0 rgba(0,255,229,0)}
+}
+#agent-btn svg{width:26px;height:26px;fill:none;stroke:#000;stroke-width:2;stroke-linecap:round}
+.agent-notif{
+  position:absolute;top:-4px;right:-4px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--red);border:2px solid var(--void);
+  font-family:'JetBrains Mono',monospace;font-size:.55rem;
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;animation:notifBounce .5s ease infinite alternate;
+}
+@keyframes notifBounce{from{transform:scale(1)}to{transform:scale(1.2)}}
+
+#agent-window{
+  position:fixed;bottom:6rem;right:2rem;z-index:1001;
+  width:380px;max-height:580px;
+  background:#020c18;
+  border:1px solid rgba(0,255,229,.2);
+  border-radius:12px;overflow:hidden;
+  display:none;flex-direction:column;
+  box-shadow:0 25px 80px rgba(0,0,0,.7),0 0 40px rgba(0,255,229,.08);
+  animation:agentOpen .25s ease;
+}
+@keyframes agentOpen{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+#agent-window.open{display:flex}
+
+.aw-header{
+  background:linear-gradient(135deg,rgba(0,255,229,.1),rgba(124,58,237,.1));
+  border-bottom:1px solid rgba(0,255,229,.1);
+  padding:.9rem 1.1rem;display:flex;align-items:center;gap:.75rem;flex-shrink:0;
+}
+.aw-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));
+  display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
+  position:relative;
+}
+.aw-avatar::after{
+  content:'';position:absolute;bottom:1px;right:1px;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--green);border:2px solid #020c18;
+}
+.aw-info{flex:1}
+.aw-name{font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;color:var(--text)}
+.aw-status{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--green);letter-spacing:.06em}
+.aw-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:.2rem;transition:color .2s}
+.aw-close:hover{color:var(--text)}
+
+.aw-messages{
+  flex:1;overflow-y:auto;padding:.85rem;
+  display:flex;flex-direction:column;gap:.65rem;
+  scrollbar-width:thin;scrollbar-color:rgba(0,255,229,.15) transparent;
+}
+.aw-messages::-webkit-scrollbar{width:4px}
+.aw-messages::-webkit-scrollbar-thumb{background:rgba(0,255,229,.15);border-radius:2px}
+
+.msg{display:flex;gap:.5rem;max-width:88%;animation:msgIn .25s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.msg.bot{align-self:flex-start}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--violet));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem}
+.msg-bubble{
+  font-family:'Inter',sans-serif;font-size:.84rem;line-height:1.55;
+  padding:.62rem .85rem;border-radius:10px;
+}
+.msg.bot .msg-bubble{
+  background:rgba(0,255,229,.07);border:1px solid rgba(0,255,229,.1);
+  color:var(--text);border-radius:10px 10px 10px 3px;
+}
+.msg.user .msg-bubble{
+  background:linear-gradient(135deg,rgba(0,255,229,.2),rgba(124,58,237,.2));
+  border:1px solid rgba(0,255,229,.2);color:var(--text);
+  border-radius:10px 10px 3px 10px;
+}
+.msg-time{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--muted);margin-top:.25rem;text-align:right}
+
+.typing-indicator{display:flex;gap:4px;padding:.55rem .75rem;align-items:center}
+.typing-indicator span{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:typingDot 1.2s infinite}
+.typing-indicator span:nth-child(2){animation-delay:.2s}
+.typing-indicator span:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+.aw-quick{
+  display:flex;flex-wrap:wrap;gap:.4rem;
+  padding:.5rem .85rem;border-top:1px solid rgba(0,255,229,.06);flex-shrink:0;
+}
+.quick-btn{
+  font-family:'Inter',sans-serif;font-size:.72rem;padding:.32rem .75rem;
+  border:1px solid rgba(0,255,229,.2);border-radius:20px;
+  color:var(--cyan);background:none;cursor:pointer;transition:all .2s;
+}
+.quick-btn:hover{background:rgba(0,255,229,.1)}
+
+.aw-input-row{
+  display:flex;gap:.5rem;padding:.7rem .85rem;
+  border-top:1px solid rgba(0,255,229,.08);flex-shrink:0;
+  background:rgba(0,0,0,.3);
+}
+#agent-input{
+  flex:1;background:rgba(0,255,229,.04);border:1px solid rgba(0,255,229,.12);
+  border-radius:6px;padding:.55rem .8rem;
+  font-family:'Inter',sans-serif;font-size:.83rem;color:var(--text);
+  outline:none;transition:border-color .2s;
+}
+#agent-input:focus{border-color:rgba(0,255,229,.35)}
+#agent-input::placeholder{color:var(--muted)}
+#agent-send{
+  background:linear-gradient(135deg,var(--cyan),var(--violet));
+  border:none;border-radius:6px;width:38px;height:38px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:opacity .2s;flex-shrink:0;
+}
+#agent-send:hover{opacity:.85}
+#agent-send svg{width:16px;height:16px;fill:none;stroke:#000;stroke-width:2.5;stroke-linecap:round}
+
+.aw-channels{
+  display:flex;gap:.5rem;padding:.5rem .85rem;
+  border-top:1px solid rgba(0,255,229,.06);flex-shrink:0;
+  justify-content:center;
+}
+.ch-btn{
+  display:flex;align-items:center;gap:.4rem;
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;
+  padding:.3rem .75rem;border-radius:4px;border:none;cursor:pointer;
+  letter-spacing:.05em;transition:all .2s;text-decoration:none;
+}
+.ch-wa{background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.25)}
+.ch-wa:hover{background:rgba(37,211,102,.25)}
+.ch-em{background:rgba(0,196,255,.15);color:var(--cyan2);border:1px solid rgba(0,196,255,.25)}
+.ch-em:hover{background:rgba(0,196,255,.25)}
+
+/* ── EXIT INTENT OVERLAY ── */
+#exit-overlay{
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(0,3,5,.92);backdrop-filter:blur(12px);
+  display:none;align-items:center;justify-content:center;
+  animation:exitFade .3s ease;
+}
+@keyframes exitFade{from{opacity:0}to{opacity:1}}
+#exit-overlay.show{display:flex}
+.exit-box{
+  background:var(--surface);border:1px solid rgba(0,255,229,.25);
+  border-radius:14px;padding:2.5rem;max-width:480px;width:90%;
+  text-align:center;position:relative;
+  box-shadow:0 0 80px rgba(0,255,229,.1);
+}
+.exit-badge{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;
+  color:var(--amber);letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:1rem;
+}
+.exit-title{
+  font-family:'Roboto',sans-serif;font-size:1.7rem;font-weight:900;
+  letter-spacing:-.02em;line-height:1.1;margin-bottom:.75rem;
+}
+.exit-sub{font-family:'Inter',sans-serif;font-size:.95rem;color:rgba(184,214,240,.75);line-height:1.65;margin-bottom:1.5rem}
+.exit-form{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1rem}
+.exit-input{
+  background:rgba(0,255,229,.04);border:1px solid rgba(0,255,229,.15);
+  border-radius:6px;padding:.7rem 1rem;
+  font-family:'Inter',sans-serif;font-size:.9rem;color:var(--text);
+  outline:none;transition:border-color .2s;
+}
+.exit-input:focus{border-color:rgba(0,255,229,.4)}
+.exit-input::placeholder{color:var(--muted)}
+.exit-cta{
+  width:100%;padding:.8rem;border:none;border-radius:6px;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));
+  font-family:'Inter',sans-serif;font-size:.95rem;font-weight:600;
+  color:#000;cursor:pointer;transition:opacity .2s;
+}
+.exit-cta:hover{opacity:.9}
+.exit-close{
+  position:absolute;top:1rem;right:1rem;background:none;border:none;
+  color:var(--muted);font-size:1.2rem;cursor:pointer;
+  transition:color .2s;padding:.3rem;
+}
+.exit-close:hover{color:var(--text)}
+.exit-guarantee{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.06em}
+
+/* ── COOKIE BANNER ── */
+#cookie-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:1500;
+  background:rgba(4,8,15,.97);border-top:1px solid rgba(0,255,229,.12);
+  padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;
+  transform:translateY(100%);transition:transform .4s ease;
+}
+#cookie-bar.show{transform:translateY(0)}
+.cb-text{font-family:'Inter',sans-serif;font-size:.82rem;color:var(--muted);line-height:1.5;flex:1}
+.cb-text a{color:var(--cyan);text-decoration:none}
+.cb-btns{display:flex;gap:.6rem;flex-shrink:0}
+.cb-accept{
+  font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;
+  padding:.5rem 1.25rem;border:none;border-radius:4px;
+  background:var(--cyan);color:#000;cursor:pointer;transition:opacity .2s;
+}
+.cb-accept:hover{opacity:.85}
+.cb-decline{
+  font-family:'Inter',sans-serif;font-size:.78rem;
+  padding:.5rem 1rem;border:1px solid rgba(0,255,229,.2);
+  border-radius:4px;background:none;color:var(--muted);cursor:pointer;transition:all .2s;
+}
+.cb-decline:hover{color:var(--text)}
+
+
+/* ── SCROLL REVEAL ── */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s,transform .7s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ── RESPONSIVE MOBILE ── */
+@media(max-width:1024px){
+  .agents-grid{grid-template-columns:repeat(2,1fr)}
+  .pricing-grid{grid-template-columns:repeat(2,1fr)}
+  .heatmap-wrap{grid-template-columns:1fr}
+  .neural-content{grid-template-columns:1fr}
+  .neural-viz{height:260px;margin-bottom:2rem}
+}
+
+@media(max-width:768px){
+  /* Nav mobile */
+  nav{padding:.9rem 1.25rem}
+  .nav-links{display:none}
+  .nav-cta{gap:.5rem}
+  .btn-ghost,.btn-primary{font-size:.65rem;padding:.45rem .9rem}
+
+  /* Cursor off mobile */
+  #cursor,#cursor-ring{display:none}
+  body{cursor:auto}
+  .btn-ghost,.btn-primary,.agent-card,.pip-node{cursor:pointer}
+
+  /* Hero mobile */
+  .hero{padding:5.5rem 1.25rem 3rem;min-height:100svh}
+  .hero-content{max-width:100%}
+  .hero-tag{font-size:.65rem;letter-spacing:.12em}
+  .hero-title{font-size:clamp(1.9rem,8vw,3rem);line-height:1.08}
+  .hero-sub{font-size:.97rem;line-height:1.7;margin-bottom:1.5rem}
+  .hero-typewriter{font-size:.72rem;flex-wrap:wrap;justify-content:center}
+  .hero-btns{flex-direction:column;align-items:center;gap:.75rem}
+  .hero-btns .btn-primary,.hero-btns .btn-ghost{width:100%;max-width:280px;text-align:center;padding:.85rem 1.5rem;font-size:.78rem}
+  .hero-stats{gap:1.25rem;flex-wrap:wrap;justify-content:center;margin-top:2.5rem}
+  .stat-val{font-size:1.4rem}
+  .stat-label{font-size:.55rem}
+
+  /* Sections */
+  .section,.heatmap-section,.auto-section,.neural-section,.pricing-section,.cta-section{padding:3.5rem 1.25rem}
+  .sec-header{margin-bottom:2.5rem}
+  .sec-title{font-size:clamp(1.5rem,6vw,2rem)}
+  .sec-sub{font-size:.92rem}
+
+  /* Agents */
+  .agents-grid{grid-template-columns:1fr;gap:1px}
+  .agent-card{padding:1.5rem 1.25rem}
+  .ac-title{font-size:.97rem}
+  .ac-desc{font-size:.83rem}
+
+  /* Pipeline */
+  .pipeline-track{flex-direction:column;align-items:stretch;gap:.5rem}
+  .pipeline-track::before{display:none}
+  .pip-arrow{transform:rotate(90deg);text-align:center;padding:.25rem 0}
+  .pip-node{padding:.9rem .75rem}
+
+  /* Auto cards */
+  .auto-cards{grid-template-columns:1fr;gap:1rem}
+
+  /* Heatmap */
+  .hm-canvas-wrap{margin-top:1.5rem}
+  #world-heatmap{width:100%;height:auto}
+  .hm-stats{gap:.85rem}
+  .hm-legend{flex-wrap:wrap;gap:.6rem}
+
+  /* Neural section */
+  .neural-content{grid-template-columns:1fr;gap:2rem}
+  .neural-viz{height:220px}
+  .neural-features{gap:1rem}
+  .nf-item{padding:.9rem}
+  .nf-title{font-size:.88rem}
+  .nf-desc{font-size:.8rem}
+
+  /* Pricing */
+  .pricing-grid{grid-template-columns:1fr;max-width:360px;margin-left:auto;margin-right:auto}
+  .price-card{padding:1.5rem 1.25rem}
+  .pc-val{font-size:1.9rem}
+
+  /* CTA */
+  .cta-title{font-size:clamp(1.8rem,7vw,2.8rem)}
+  .cta-btns{flex-direction:column;align-items:center;gap:.75rem}
+  .cta-btns a{width:100%;max-width:300px;text-align:center}
+
+  /* Footer */
+  footer{padding:1.5rem 1.25rem;flex-direction:column;gap:1rem;text-align:center}
+  .footer-links{flex-wrap:wrap;justify-content:center;gap:1rem}
+
+  /* Agent window */
+  #agent-window{width:calc(100vw - 2rem);right:1rem;bottom:5.5rem;max-height:70vh}
+  #agent-btn{bottom:1.25rem;right:1.25rem;width:54px;height:54px}
+
+  /* Exit overlay */
+  .exit-box{padding:1.75rem 1.25rem}
+  .exit-title{font-size:1.4rem}
+
+  /* Cookie bar */
+  #cookie-bar{flex-direction:column;gap:.85rem;padding:1rem 1.25rem;text-align:center}
+  .cb-btns{justify-content:center}
+}
+
+@media(max-width:380px){
+  .hero-title{font-size:1.75rem}
+  .hero-sub{font-size:.88rem}
+  .pricing-grid{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <span class="nl-ia">IA</span><span class="nl-crm">CRM</span>
+    <div class="nl-dot"></div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#agentes">Agentes</a></li>
+    <li><a href="#geomap">Geo IA</a></li>
+    <li><a href="#automacoes">Automações</a></li>
+    <li><a href="#neural">Neural</a></li>
+    <li><a href="#planos">Planos</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="/login" class="btn-ghost">Entrar</a>
+    <a href="/onboarding" class="btn-primary">Ativar →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="scanline"></div>
+
+  <div class="hero-content">
+    <div class="hero-tag">Plataforma de Inteligência Comportamental</div>
+    <h1 class="hero-title">
+      <span class="ht-line1">Agentes IA</span>
+      <span class="ht-line2">que entendem</span>
+      <span class="ht-line3">cada humano</span>
+    </h1>
+    <p class="hero-sub">CRM com análise neural de sentimento em 7 dimensões, automações que se adaptam ao comportamento, e geolocalização de oportunidades em tempo real.</p>
+    <div class="hero-typewriter">
+      <span class="tw-prefix">iacrm.ai &gt;</span>
+      <span class="tw-text" id="tw-text"></span>
+      <span class="tw-cursor"></span>
+    </div>
+    <div class="hero-btns">
+      <a href="/onboarding" class="btn-primary">Começar grátis →</a>
+      <a href="#agentes" class="btn-ghost">Ver como funciona</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-val" data-target="340">0</span>
+        <span class="stat-label">% aumento conversão</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val" data-target="7">0</span>
+        <span class="stat-label">dimensões neurais</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val" data-target="62">0</span>
+        <span class="stat-label">rotas API</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val" data-target="14">0</span>
+        <span class="stat-label">dias trial grátis</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AGENTS -->
+<section class="section" id="agentes">
+  <div class="sec-header reveal">
+    <div class="sec-tag">Agentes de IA</div>
+    <h2 class="sec-title">12 agentes neurais<br>trabalhando por você</h2>
+    <p class="sec-sub">Cada módulo é um agente especializado que aprende o comportamento dos seus leads e clientes.</p>
+  </div>
+  <div class="agents-grid reveal">
+    <div class="agent-card">
+      <div class="ac-num">01 / CX</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="#00ffe5" stroke-width="1" opacity=".3"/><circle cx="20" cy="20" r="8" fill="rgba(0,255,229,.1)" stroke="#00ffe5" stroke-width="1"/><line x1="20" y1="2" x2="20" y2="12" stroke="#00ffe5" stroke-width="1"/><line x1="20" y1="28" x2="20" y2="38" stroke="#00ffe5" stroke-width="1"/><line x1="2" y1="20" x2="12" y2="20" stroke="#00ffe5" stroke-width="1"/><line x1="28" y1="20" x2="38" y2="20" stroke="#00ffe5" stroke-width="1"/></svg></div>
+      <div class="ac-title">Customer Experience Neural</div>
+      <div class="ac-desc">Mapeia cada touchpoint da jornada com análise emocional. Detecta fricção, delight e abandono automaticamente.</div>
+      <span class="ac-badge badge-live">Live</span>
+    </div>
+    <div class="agent-card">
+      <div class="ac-num">02 / CS</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><rect x="4" y="8" width="32" height="24" rx="3" stroke="#7c3aed" stroke-width="1" opacity=".5"/><path d="M4 14h32" stroke="#7c3aed" stroke-width=".8"/><circle cx="12" cy="11" r="1.5" fill="#7c3aed" opacity=".6"/><path d="M12 22l4 4 8-8" stroke="#00ffe5" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div class="ac-title">Customer Success IA</div>
+      <div class="ac-desc">Prediz churn antes que aconteça. Monitora saúde do cliente com score dinâmico baseado em comportamento.</div>
+      <span class="ac-badge badge-live">Live</span>
+    </div>
+    <div class="agent-card">
+      <div class="ac-num">03 / NPS</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><path d="M6 28 L14 18 L22 22 L34 10" stroke="#ffaa00" stroke-width="1.5" stroke-linecap="round" fill="none"/><circle cx="34" cy="10" r="2.5" fill="#ffaa00"/><circle cx="14" cy="18" r="2" fill="rgba(255,170,0,.4)"/><circle cx="22" cy="22" r="2" fill="rgba(255,170,0,.4)"/></svg></div>
+      <div class="ac-title">NPS · CES · CSAT Neural</div>
+      <div class="ac-desc">Pesquisas no momento e canal certos. Análise semântica de respostas abertas com insights acionáveis.</div>
+      <span class="ac-badge badge-live">Live</span>
+    </div>
+    <div class="agent-card">
+      <div class="ac-num">04 / EMAIL</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><rect x="4" y="10" width="32" height="22" rx="3" stroke="#00c4ff" stroke-width="1" opacity=".5"/><path d="M4 13l16 11 16-11" stroke="#00c4ff" stroke-width="1" fill="none"/></svg></div>
+      <div class="ac-title">E-mail com IA Generativa</div>
+      <div class="ac-desc">Campanhas, sequências e transacionais. IA personaliza assunto, horário e frequência por cluster comportamental.</div>
+      <span class="ac-badge badge-live">Live</span>
+    </div>
+    <div class="agent-card">
+      <div class="ac-num">05 / WA</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="16" stroke="#00ff88" stroke-width="1" opacity=".4"/><path d="M13 24c2-6 10-10 14-6s2 10-4 12l-4 2 1-4-7-4z" stroke="#00ff88" stroke-width="1.2" fill="none"/></svg></div>
+      <div class="ac-title">WhatsApp Omnichannel</div>
+      <div class="ac-desc">Inbox neural multi-atendente, templates Meta aprovados, análise de sentimento por conversa e bots adaptativos.</div>
+      <span class="ac-badge badge-live">Live</span>
+    </div>
+    <div class="agent-card">
+      <div class="ac-num">06 / CLUSTER</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="4" fill="rgba(124,58,237,.4)" stroke="#7c3aed" stroke-width="1"/><circle cx="10" cy="12" r="3" fill="rgba(0,255,229,.2)" stroke="#00ffe5" stroke-width="1"/><circle cx="30" cy="12" r="3" fill="rgba(0,255,229,.2)" stroke="#00ffe5" stroke-width="1"/><circle cx="10" cy="28" r="3" fill="rgba(255,170,0,.2)" stroke="#ffaa00" stroke-width="1"/><circle cx="30" cy="28" r="3" fill="rgba(255,170,0,.2)" stroke="#ffaa00" stroke-width="1"/><line x1="16" y1="19" x2="13" y2="15" stroke="rgba(124,58,237,.4)" stroke-width=".8"/><line x1="24" y1="19" x2="27" y2="15" stroke="rgba(124,58,237,.4)" stroke-width=".8"/><line x1="16" y1="21" x2="13" y2="25" stroke="rgba(124,58,237,.4)" stroke-width=".8"/><line x1="24" y1="21" x2="27" y2="25" stroke="rgba(124,58,237,.4)" stroke-width=".8"/></svg></div>
+      <div class="ac-title">Clustering Neural</div>
+      <div class="ac-desc">Segmenta sua base em 7 perfis comportamentais automaticamente. Cada cluster recebe estratégia personalizada.</div>
+      <span class="ac-badge badge-new">Novo</span>
+    </div>
+    <div class="agent-card">
+      <div class="ac-num">07 / JORNADAS</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><path d="M6 20 Q13 8 20 20 Q27 32 34 20" stroke="#00ffe5" stroke-width="1.5" fill="none"/><circle cx="6" cy="20" r="2.5" fill="#00ffe5" opacity=".6"/><circle cx="20" cy="20" r="2.5" fill="#7c3aed" opacity=".8"/><circle cx="34" cy="20" r="2.5" fill="#00ffe5" opacity=".6"/></svg></div>
+      <div class="ac-title">Jornadas Adaptativas</div>
+      <div class="ac-desc">Automações que mudam de rota baseado no sentimento detectado. Se detectar frustração, escala para humano.</div>
+      <span class="ac-badge badge-live">Live</span>
+    </div>
+    <div class="agent-card">
+      <div class="ac-num">08 / SMS</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><rect x="12" y="4" width="16" height="32" rx="3" stroke="#ffaa00" stroke-width="1" opacity=".5"/><rect x="17" y="30" width="6" height="2" rx="1" fill="#ffaa00" opacity=".5"/><line x1="15" y1="14" x2="25" y2="14" stroke="#ffaa00" stroke-width="1" opacity=".6"/><line x1="15" y1="18" x2="22" y2="18" stroke="#ffaa00" stroke-width="1" opacity=".4"/></svg></div>
+      <div class="ac-title">SMS Inteligente</div>
+      <div class="ac-desc">Disparos transacionais e campanhas segmentadas por comportamento. IA otimiza timing e frequência automaticamente.</div>
+      <span class="ac-badge badge-beta">Beta</span>
+    </div>
+    <div class="agent-card">
+      <div class="ac-num">09 / INSIGHTS</div>
+      <div class="ac-icon"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="#00ffe5" stroke-width=".8" stroke-dasharray="3 3" opacity=".3"/><circle cx="20" cy="20" r="8" fill="rgba(0,255,229,.05)" stroke="#00ffe5" stroke-width="1" opacity=".5"/><text x="20" y="24" text-anchor="middle" fill="#00ffe5" font-size="10" font-family="JetBrains Mono" opacity=".8">AI</text></svg></div>
+      <div class="ac-title">Insights Comportamentais</div>
+      <div class="ac-desc">Pergunte em linguagem natural: "qual segmento converte mais?" — o Gemini analisa toda sua base e responde.</div>
+      <span class="ac-badge badge-live">Live</span>
+    </div>
+  </div>
+</section>
+
+<!-- HEATMAP GEO -->
+<section class="heatmap-section" id="geomap">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="heatmap-wrap">
+      <div class="reveal">
+        <div class="sec-header" style="margin-bottom:2rem">
+          <div class="sec-tag">Geo IA Neural</div>
+          <h2 class="sec-title">Mapa de calor<br>de oportunidades</h2>
+          <p class="sec-sub">Visualize onde estão seus leads mais quentes em tempo real. O sistema identifica clusters geográficos de alta conversão.</p>
+        </div>
+        <div class="hm-stats">
+          <div class="hm-stat">
+            <div><div class="hms-label">Sudeste — SP · RJ · MG</div><div class="hms-bar"><div class="hms-fill" style="width:84%"></div></div></div>
+            <div class="hms-val">84%</div>
+          </div>
+          <div class="hm-stat">
+            <div><div class="hms-label">Sul — PR · SC · RS</div><div class="hms-bar"><div class="hms-fill" style="width:61%"></div></div></div>
+            <div class="hms-val">61%</div>
+          </div>
+          <div class="hm-stat">
+            <div><div class="hms-label">Nordeste — BA · PE · CE</div><div class="hms-bar"><div class="hms-fill" style="width:47%"></div></div></div>
+            <div class="hms-val">47%</div>
+          </div>
+          <div class="hm-stat">
+            <div><div class="hms-label">Centro-Oeste — DF · GO · MT</div><div class="hms-bar"><div class="hms-fill" style="width:38%"></div></div></div>
+            <div class="hms-val">38%</div>
+          </div>
+        </div>
+        <div class="hm-legend">
+          <div class="hm-leg-item"><div class="hm-dot" style="background:#ff3b3b"></div> Alta conversão</div>
+          <div class="hm-leg-item"><div class="hm-dot" style="background:#ffaa00"></div> Média</div>
+          <div class="hm-leg-item"><div class="hm-dot" style="background:#00ffe5"></div> Novos leads</div>
+        </div>
+      </div>
+      <div class="hm-canvas-wrap reveal">
+        <canvas id="world-heatmap" width="600" height="380"></canvas>
+        <div class="hm-overlay"><div class="hm-scan"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AUTOMAÇÕES -->
+<section class="auto-section" id="automacoes">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="sec-header reveal">
+      <div class="sec-tag">Automações Inteligentes</div>
+      <h2 class="sec-title">Pipeline que se move<br>sozinho</h2>
+      <p class="sec-sub">Cada ação de um lead dispara automações encadeadas. Sem código. Sem configuração manual.</p>
+    </div>
+
+    <div class="pipeline-visual reveal">
+      <div class="pipeline-track">
+        <div class="pip-node"><div class="pip-node-ico">📥</div><div class="pip-node-title">Lead entra</div><div class="pip-node-sub">via API / form / WA</div></div>
+        <div class="pip-arrow">→</div>
+        <div class="pip-node"><div class="pip-node-ico">🧠</div><div class="pip-node-title">IA analisa</div><div class="pip-node-sub">sentimento 7D</div></div>
+        <div class="pip-arrow">→</div>
+        <div class="pip-node"><div class="pip-node-ico">🎯</div><div class="pip-node-title">Cluster</div><div class="pip-node-sub">perfil detectado</div></div>
+        <div class="pip-arrow">→</div>
+        <div class="pip-node"><div class="pip-node-ico">⚡</div><div class="pip-node-title">Jornada</div><div class="pip-node-sub">automação inicia</div></div>
+        <div class="pip-arrow">→</div>
+        <div class="pip-node"><div class="pip-node-ico">💰</div><div class="pip-node-title">Conversão</div><div class="pip-node-sub">pipeline fechado</div></div>
+      </div>
+    </div>
+
+    <div class="auto-cards reveal">
+      <div class="auto-card">
+        <div class="auto-card-head">
+          <div><div class="auto-card-title">Boas-vindas Neural</div></div>
+          <div class="ac-status">ATIVO</div>
+        </div>
+        <div class="auto-card-desc">Sequência de 7 dias adaptada ao perfil detectado na primeira mensagem. WhatsApp + E-mail sincronizados.</div>
+        <div class="auto-card-metric">+127%</div>
+        <div class="auto-card-metric-label">AUMENTO NA ATIVAÇÃO</div>
+      </div>
+      <div class="auto-card">
+        <div class="auto-card-head">
+          <div><div class="auto-card-title">Reativação de Dormentes</div></div>
+          <div class="ac-status">ATIVO</div>
+        </div>
+        <div class="auto-card-desc">Detecta leads inativos há 15 dias e inicia sequência de reativação com copy gerado por IA para o perfil.</div>
+        <div class="auto-card-metric">34%</div>
+        <div class="auto-card-metric-label">TAXA DE REATIVAÇÃO</div>
+      </div>
+      <div class="auto-card">
+        <div class="auto-card-head">
+          <div><div class="auto-card-title">Alerta de Churn</div></div>
+          <div class="ac-status">ATIVO</div>
+        </div>
+        <div class="auto-card-desc">Score de saúde do cliente cai abaixo de 60? Agente dispara sequência de retenção personalizada automaticamente.</div>
+        <div class="auto-card-metric">89%</div>
+        <div class="auto-card-metric-label">RETENÇÃO COM IA</div>
+      </div>
+      <div class="auto-card">
+        <div class="auto-card-head">
+          <div><div class="auto-card-title">Upsell Preditivo</div></div>
+          <div class="ac-status">ATIVO</div>
+        </div>
+        <div class="auto-card-desc">Quando o score de intenção de compra ultrapassa 75, notifica o vendedor e envia proposta personalizada via WA.</div>
+        <div class="auto-card-metric">2.4x</div>
+        <div class="auto-card-metric-label">TICKET MÉDIO</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NEURAL -->
+<section class="neural-section" id="neural">
+  <canvas id="neural-bg"></canvas>
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="neural-content">
+      <div class="neural-viz reveal">
+        <canvas id="neural-viz-canvas"></canvas>
+      </div>
+      <div class="reveal">
+        <div class="sec-header" style="margin-bottom:2rem">
+          <div class="sec-tag">Sentimento Neural 7D</div>
+          <h2 class="sec-title">O CRM que lê<br>intenção, não só dados</h2>
+          <p class="sec-sub">Análise em 7 dimensões em cada mensagem recebida.</p>
+        </div>
+        <div class="neural-features">
+          <div class="nf-item"><div class="nf-ico">🎯</div><div><div class="nf-title">Intenção de Compra</div><div class="nf-desc">Probabilidade 0-100 de conversão baseada no padrão linguístico.</div></div></div>
+          <div class="nf-item"><div class="nf-ico">⚡</div><div><div class="nf-title">Urgência Detectada</div><div class="nf-desc">Identifica sinais de urgência para priorização automática da fila.</div></div></div>
+          <div class="nf-item"><div class="nf-ico">🤝</div><div><div class="nf-title">Nível de Confiança</div><div class="nf-desc">Score de rapport e confiança estabelecida ao longo da conversa.</div></div></div>
+          <div class="nf-item"><div class="nf-ico">⚠️</div><div><div class="nf-title">Alerta de Frustração</div><div class="nf-desc">Detecta insatisfação antes que vire churn. Escalona para humano.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="planos">
+  <div class="sec-header reveal" style="max-width:500px;margin:0 auto 0;text-align:center">
+    <div class="sec-tag">Planos</div>
+    <h2 class="sec-title">Começa grátis.<br>Escala quando precisar.</h2>
+  </div>
+  <div class="pricing-grid reveal">
+    <div class="price-card">
+      <div class="pc-tag">Free</div>
+      <div class="pc-price"><span class="pc-val">R$0</span><span class="pc-per">/mês</span></div>
+      <div class="pc-name">Para começar</div>
+      <ul class="pc-features">
+        <li>100 contatos</li>
+        <li>E-mail + WhatsApp</li>
+        <li>Análise neural básica</li>
+        <li>14 dias trial completo</li>
+      </ul>
+      <a href="/onboarding" class="pc-cta">ATIVAR GRÁTIS</a>
+    </div>
+    <div class="price-card popular">
+      <div class="popular-badge">POPULAR</div>
+      <div class="pc-tag">Starter</div>
+      <div class="pc-price"><span class="pc-val">R$97</span><span class="pc-per">/mês</span></div>
+      <div class="pc-name">Para crescer</div>
+      <ul class="pc-features">
+        <li>1.000 contatos</li>
+        <li>Todos os 7 canais</li>
+        <li>CX + CS + NPS</li>
+        <li>Clustering básico</li>
+        <li>API 5k req/hora</li>
+      </ul>
+      <a href="/onboarding" class="pc-cta">ATIVAR AGORA</a>
+    </div>
+    <div class="price-card">
+      <div class="pc-tag">Pro</div>
+      <div class="pc-price"><span class="pc-val">R$197</span><span class="pc-per">/mês</span></div>
+      <div class="pc-name">Para escalar</div>
+      <ul class="pc-features">
+        <li>5.000 contatos</li>
+        <li>Sentimento neural 7D</li>
+        <li>Jornadas adaptativas</li>
+        <li>Insights IA</li>
+        <li>Webhooks ilimitados</li>
+      </ul>
+      <a href="/onboarding" class="pc-cta">ATIVAR AGORA</a>
+    </div>
+    <div class="price-card">
+      <div class="pc-tag">Enterprise</div>
+      <div class="pc-price"><span class="pc-val">R$497</span><span class="pc-per">/mês</span></div>
+      <div class="pc-name">Para dominar</div>
+      <ul class="pc-features">
+        <li>Ilimitado</li>
+        <li>Modelo customizado</li>
+        <li>API comportamental</li>
+        <li>SLA dedicado</li>
+        <li>Onboarding guiado</li>
+      </ul>
+      <a href="/onboarding" class="pc-cta">FALAR COM TIME</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <canvas id="cta-canvas"></canvas>
+  <div class="cta-content reveal">
+    <h2 class="cta-title">Seu CRM neural<br>está pronto.</h2>
+    <p class="cta-sub">Crie sua conta em 2 minutos. Sem cartão de crédito.</p>
+    <div class="cta-btns">
+      <a href="/onboarding" class="btn-primary" style="padding:.9rem 3rem;font-size:.82rem">Ativar agora — é grátis →</a>
+      <a href="/docs" class="btn-ghost" style="padding:.9rem 2rem;font-size:.82rem">Ver documentação</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">IACRM · v1.0 · 2026</div>
+  <div class="footer-links">
+    <a href="/docs">API Docs</a>
+    <a href="/onboarding">Criar conta</a>
+    <a href="/login">Login</a>
+  </div>
+  <div class="footer-copy">© 2026 IACRM. Todos os direitos reservados.</div>
+</footer>
+
+<!-- ── COOKIE BANNER ── -->
+<div id="cookie-bar">
+  <p class="cb-text">🍪 Usamos cookies e dados de navegação para personalizar sua experiência e alimentar nossa IA comportamental. Ao aceitar, você nos permite analisar seu comportamento para oferecer a melhor abordagem de vendas.</p>
+  <div class="cb-btns">
+    <button class="cb-decline" onclick="cookieDecline()">Recusar</button>
+    <button class="cb-accept" onclick="cookieAccept()">Aceitar tudo</button>
+  </div>
+</div>
+
+<!-- ── EXIT INTENT ── -->
+<div id="exit-overlay">
+  <div class="exit-box">
+    <button class="exit-close" onclick="closeExit()">✕</button>
+    <div class="exit-badge">⚡ Oferta especial — só para você</div>
+    <h2 class="exit-title">Espera! Antes<br>de ir embora...</h2>
+    <p class="exit-sub" id="exit-msg">Nossa IA detectou que você tem interesse. Deixe seu contato e um especialista entra em contato em menos de 2 horas.</p>
+    <div class="exit-form">
+      <input class="exit-input" id="exit-nome" type="text" placeholder="Seu nome" autocomplete="name"/>
+      <input class="exit-input" id="exit-email" type="email" placeholder="Seu melhor e-mail" autocomplete="email"/>
+      <input class="exit-input" id="exit-wa" type="tel" placeholder="WhatsApp (com DDD)" autocomplete="tel"/>
+      <button class="exit-cta" onclick="exitSubmit()">Quero um especialista agora →</button>
+    </div>
+    <p class="exit-guarantee">🔒 Sem spam. Você pode cancelar a qualquer momento.</p>
+  </div>
+</div>
+
+<!-- ── AGENTE IA ── -->
+<button id="agent-btn" onclick="toggleAgent()" title="Falar com IA">
+  <div class="agent-notif">1</div>
+  <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/><circle cx="12" cy="12" r="3" stroke-width="1.5" fill="none"/><path d="M8 12h8M12 8v8" stroke-width="1.8"/></svg>
+</button>
+
+<div id="agent-window">
+  <div class="aw-header">
+    <div class="aw-avatar">🤖</div>
+    <div class="aw-info">
+      <div class="aw-name">ARIA — Agente IACRM</div>
+      <div class="aw-status">● Online agora · responde em segundos</div>
+    </div>
+    <button class="aw-close" onclick="toggleAgent()">✕</button>
+  </div>
+
+  <div class="aw-messages" id="aw-msgs"></div>
+
+  <div class="aw-quick" id="aw-quick">
+    <button class="quick-btn" onclick="quickMsg('Como funciona o IACRM?')">Como funciona?</button>
+    <button class="quick-btn" onclick="quickMsg('Qual é o melhor plano para mim?')">Qual plano?</button>
+    <button class="quick-btn" onclick="quickMsg('Quero uma demonstração')">Ver demo</button>
+    <button class="quick-btn" onclick="quickMsg('Quanto custa?')">Preços</button>
+  </div>
+
+  <div class="aw-input-row">
+    <input id="agent-input" type="text" placeholder="Digite sua mensagem..." onkeydown="if(event.key==='Enter')sendMsg()"/>
+    <button id="agent-send" onclick="sendMsg()">
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+
+  <div class="aw-channels">
+    <a class="ch-btn ch-wa" id="wa-link" href="#" onclick="openWhatsApp(event)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.098.543 4.066 1.493 5.775L0 24l6.414-1.687A11.936 11.936 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.794 9.794 0 01-4.988-1.365l-.358-.213-3.706.975.991-3.617-.234-.372A9.782 9.782 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+      WhatsApp
+    </a>
+    <a class="ch-btn ch-em" href="#" onclick="openEmail(event)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+      E-mail
+    </a>
+  </div>
+</div>
+
+<script>
+// ── CURSOR ──
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing)}
+animRing();
+document.querySelectorAll('a,button,[class*="card"],[class*="node"]').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.width='20px';cur.style.height='20px';ring.style.width='60px';ring.style.height='60px'});
+  el.addEventListener('mouseleave',()=>{cur.style.width='12px';cur.style.height='12px';ring.style.width='36px';ring.style.height='36px'});
+});
+
+// ── WORLD HEATMAP ──
+(function(){
+  const c=document.getElementById('world-heatmap');
+  const ctx=c.getContext('2d');
+  const W=600,H=380;
+  // Brazil simplified outline (states as dots)
+  const states=[
+    // Sudeste (hot)
+    {x:420,y:235,label:'SP',heat:1},{x:440,y:210,label:'RJ',heat:.95},{x:415,y:200,label:'MG',heat:.85},
+    {x:390,y:230,label:'ES',heat:.7},
+    // Sul
+    {x:390,y:275,label:'PR',heat:.75},{x:380,y:295,label:'SC',heat:.65},{x:370,y:315,label:'RS',heat:.6},
+    // Nordeste
+    {x:470,y:165,label:'BA',heat:.6},{x:490,y:140,label:'PE',heat:.5},{x:500,y:125,label:'CE',heat:.45},
+    {x:510,y:110,label:'MA',heat:.35},{x:505,y:150,label:'AL',heat:.4},{x:495,y:155,label:'SE',heat:.38},
+    {x:480,y:115,label:'PI',heat:.32},{x:515,y:100,label:'PB',heat:.35},{x:520,y:90,label:'RN',heat:.3},
+    // Centro-Oeste
+    {x:370,y:195,label:'GO',heat:.45},{x:340,y:175,label:'MT',heat:.35},{x:360,y:220,label:'MS',heat:.38},
+    {x:370,y:165,label:'DF',heat:.55},
+    // Norte
+    {x:310,y:145,label:'AM',heat:.2},{x:250,y:110,label:'RR',heat:.1},{x:290,y:100,label:'PA',heat:.18},
+    {x:360,y:130,label:'TO',heat:.25},{x:250,y:160,label:'AC',heat:.1},{x:280,y:130,label:'RO',heat:.15},
+    {x:270,y:85,label:'AP',heat:.12},
+    // Nordeste continued
+    {x:470,y:130,label:'RN',heat:.28},
+  ];
+  let t=0;
+  function getColor(heat,alpha=1){
+    if(heat>.8)return`rgba(255,59,59,${alpha})`;
+    if(heat>.6)return`rgba(255,130,0,${alpha})`;
+    if(heat>.4)return`rgba(255,200,0,${alpha})`;
+    if(heat>.25)return`rgba(0,255,136,${alpha})`;
+    return`rgba(0,196,255,${alpha})`;
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    t+=.015;
+    // Background grid
+    ctx.strokeStyle='rgba(0,255,229,.04)';ctx.lineWidth=.5;
+    for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+    for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+    // Brazil rough outline
+    ctx.strokeStyle='rgba(0,255,229,.1)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.strokeRect(225,80,320,265);
+    ctx.setLineDash([]);
+    // Title
+    ctx.fillStyle='rgba(0,255,229,.4)';ctx.font='10px JetBrains Mono';ctx.fillText('BRASIL — MAPA DE CALOR DE LEADS',120,30);
+    ctx.fillStyle='rgba(0,255,229,.2)';ctx.font='9px JetBrains Mono';ctx.fillText('TEMPO REAL · '+new Date().toLocaleTimeString('pt-BR'),280,50);
+    // Heat spots
+    states.forEach((s,i)=>{
+      const pulse=Math.sin(t*1.5+i)*.15;
+      const r=(s.heat*28+10)*(1+pulse);
+      const grd=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,r);
+      grd.addColorStop(0,getColor(s.heat,.7));
+      grd.addColorStop(.5,getColor(s.heat,.25));
+      grd.addColorStop(1,getColor(s.heat,0));
+      ctx.fillStyle=grd;ctx.fillRect(s.x-r,s.y-r,r*2,r*2);
+      // center dot
+      ctx.beginPath();ctx.arc(s.x,s.y,2.5,0,Math.PI*2);
+      ctx.fillStyle=getColor(s.heat,.9);ctx.fill();
+      // label for hot states
+      if(s.heat>.6){
+        ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='bold 8px JetBrains Mono';
+        ctx.fillText(s.label,s.x+4,s.y-4);
+      }
+    });
+    // Live indicator
+    const blink=Math.sin(t*4)>.0;
+    ctx.beginPath();ctx.arc(20,20,4,0,Math.PI*2);
+    ctx.fillStyle=blink?'rgba(0,255,136,1)':'rgba(0,255,136,.3)';ctx.fill();
+    ctx.fillStyle='rgba(0,255,136,.7)';ctx.font='9px JetBrains Mono';ctx.fillText('AO VIVO',30,24);
+    // Counter
+    const count=Math.floor(1247+Math.sin(t)*12);
+    ctx.fillStyle='rgba(0,255,229,.5)';ctx.font='9px JetBrains Mono';
+    ctx.fillText(count+' leads ativos',450,362);
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── NEURAL VIZ CANVAS ──
+(function(){
+  const c=document.getElementById('neural-viz-canvas');
+  if(!c)return;
+  const ctx=c.getContext('2d');
+  function resize(){c.width=c.offsetWidth;c.height=c.offsetHeight||400}
+  resize();
+  const W=()=>c.width,H=()=>c.height;
+  const layers=[4,6,6,4,1];
+  let nodes=[],t=0;
+  function buildNodes(){
+    nodes=[];
+    const totalLayers=layers.length;
+    layers.forEach((count,li)=>{
+      const lx=(li/(totalLayers-1))*W()*.85+W()*.075;
+      for(let i=0;i<count;i++){
+        const ly=((i+.5)/count)*H()*.8+H()*.1;
+        nodes.push({x:lx,y:ly,layer:li,idx:i,act:Math.random(),phase:Math.random()*Math.PI*2});
+      }
+    });
+  }
+  buildNodes();
+  function draw(){
+    ctx.clearRect(0,0,W(),H());
+    t+=.02;
+    // connections
+    nodes.forEach(n=>{
+      const next=nodes.filter(m=>m.layer===n.layer+1);
+      next.forEach(m=>{
+        const a=Math.sin(t+n.phase)*.5+.5;
+        const w=a*n.act;
+        const grad=ctx.createLinearGradient(n.x,n.y,m.x,m.y);
+        grad.addColorStop(0,`rgba(0,255,229,${w*.3})`);
+        grad.addColorStop(.5,`rgba(124,58,237,${w*.2})`);
+        grad.addColorStop(1,`rgba(0,196,255,${w*.3})`);
+        ctx.strokeStyle=grad;ctx.lineWidth=w*1.5;
+        ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(m.x,m.y);ctx.stroke();
+      });
+    });
+    // nodes
+    nodes.forEach(n=>{
+      n.act=Math.max(0,Math.min(1,(Math.sin(t*.8+n.phase)+1)/2));
+      const r=4+n.act*6;
+      const grd=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,r*2);
+      const col=n.layer===4?'0,255,136':n.layer===0?'0,196,255':'0,255,229';
+      grd.addColorStop(0,`rgba(${col},${.6+n.act*.4})`);
+      grd.addColorStop(1,`rgba(${col},0)`);
+      ctx.fillStyle=grd;ctx.beginPath();ctx.arc(n.x,n.y,r*2,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=`rgba(${col},${.8+n.act*.2})`;
+      ctx.beginPath();ctx.arc(n.x,n.y,r*.5,0,Math.PI*2);ctx.fill();
+    });
+    // labels
+    const labels=['Input','Hidden','Hidden','Output','Score'];
+    const lxs=[...new Set(nodes.map(n=>n.x))];
+    lxs.forEach((lx,i)=>{
+      ctx.fillStyle='rgba(0,255,229,.25)';ctx.font='9px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText(labels[i]||'',lx,H()-8);
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── SCROLL REVEAL ──
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}});
+},{threshold:.15});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+// ═══════════════════════════════════════
+// IACRM — Lead Intelligence System
+// ═══════════════════════════════════════
+
+// ── CONFIG ──
+const AGENT_CFG = {
+  whatsapp: '5579999290865',           // ← coloque seu número aqui
+  email: 'contato@iacrm.com.br',       // ← seu e-mail aqui
+  apiBase: '/api/crm',
+  geminiKey: '',                        // opcional — usa backend
+};
+
+// ── LEAD DATA STORE ──
+const leadData = {
+  sessionId: crypto.randomUUID(),
+  startTime: Date.now(),
+  pageviews: 1,
+  scrollDepth: 0,
+  mouseExits: 0,
+  clickMap: [],
+  sectionsViewed: [],
+  timeOnPage: 0,
+  geo: null,
+  cookiesAccepted: false,
+  fingerprint: null,
+  chatMessages: 0,
+  nome: null,
+  email: null,
+  whatsapp: null,
+  source: document.referrer || 'direct',
+  utm: Object.fromEntries(new URLSearchParams(location.search)),
+  userAgent: navigator.userAgent,
+  language: navigator.language,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  screen: `${screen.width}x${screen.height}`,
+  device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+};
+
+// ── FINGERPRINT ──
+function buildFingerprint() {
+  const data = [
+    navigator.userAgent, navigator.language, screen.width,
+    screen.height, screen.colorDepth, navigator.hardwareConcurrency,
+    navigator.deviceMemory, Intl.DateTimeFormat().resolvedOptions().timeZone,
+    navigator.plugins.length,
+  ].join('|');
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = ((hash << 5) - hash) + data.charCodeAt(i);
+    hash |= 0;
+  }
+  leadData.fingerprint = Math.abs(hash).toString(36);
+}
+buildFingerprint();
+
+// ── COOKIE MANAGER ──
+function setCookie(k, v, days=365) {
+  const d = new Date(Date.now() + days*86400000);
+  document.cookie = `${k}=${encodeURIComponent(JSON.stringify(v))};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+}
+function getCookie(k) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + k + '=([^;]*)'));
+  try { return m ? JSON.parse(decodeURIComponent(m[1])) : null; } catch { return null; }
+}
+
+function cookieAccept() {
+  leadData.cookiesAccepted = true;
+  setCookie('iacrm_consent', { accepted: true, ts: Date.now() });
+  setCookie('iacrm_session', { sessionId: leadData.sessionId, fp: leadData.fingerprint, firstSeen: Date.now() });
+  document.getElementById('cookie-bar').classList.remove('show');
+  initGeo();
+  checkReturningVisitor();
+}
+function cookieDecline() {
+  document.getElementById('cookie-bar').classList.remove('show');
+}
+
+// Mostrar banner após 1s
+setTimeout(() => {
+  if (!getCookie('iacrm_consent')) {
+    document.getElementById('cookie-bar').classList.add('show');
+  } else {
+    leadData.cookiesAccepted = true;
+    initGeo();
+    checkReturningVisitor();
+  }
+}, 1000);
+
+// ── RETORNANDO VISITANTE ──
+function checkReturningVisitor() {
+  const prev = getCookie('iacrm_session');
+  if (prev && prev.sessionId !== leadData.sessionId) {
+    leadData.returning = true;
+    leadData.firstSeen = prev.firstSeen;
+    // Saudar retornante no chat depois de 4s
+    setTimeout(() => {
+      if (!agentOpen) return;
+      addBotMsg('Bem-vindo de volta! 👋 Posso ajudar com algo específico desta vez?');
+    }, 4000);
+  }
+}
+
+// ── GEOLOCALIZAÇÃO ──
+function initGeo() {
+  // IP-based geo (sem permissão necessária)
+  fetch('https://ipapi.co/json/')
+    .then(r => r.json())
+    .then(d => {
+      leadData.geo = {
+        ip: d.ip, city: d.city, region: d.region,
+        country: d.country_name, lat: d.latitude, lon: d.longitude,
+        org: d.org, timezone: d.timezone,
+      };
+      if (leadData.cookiesAccepted) {
+        setCookie('iacrm_geo', leadData.geo, 30);
+      }
+    })
+    .catch(() => {
+      // Fallback: geoloc browser
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          leadData.geo = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy };
+        }, () => {});
+      }
+    });
+}
+
+// ── MOUSE TRACKING ──
+let lastMoveTime = Date.now();
+let heatPoints = [];
+
+document.addEventListener('mousemove', e => {
+  lastMoveTime = Date.now();
+  // Amostrar 1 em cada 20 movimentos para heatmap
+  if (Math.random() < .05) {
+    heatPoints.push({ x: Math.round(e.clientX / window.innerWidth * 100), y: Math.round(e.clientY / window.innerHeight * 100), t: Date.now() });
+    if (heatPoints.length > 50) heatPoints.shift();
+  }
+});
+
+document.addEventListener('click', e => {
+  leadData.clickMap.push({ x: Math.round(e.clientX), y: Math.round(e.clientY), tag: e.target.tagName, t: Date.now() });
+});
+
+// ── EXIT INTENT ──
+let exitShown = false;
+let exitArmed = false;
+setTimeout(() => { exitArmed = true; }, 8000); // armar após 8s na página
+
+document.addEventListener('mouseleave', e => {
+  if (e.clientY > 20 || !exitArmed || exitShown) return;
+  leadData.mouseExits++;
+  exitShown = true;
+  showExitIntent();
+});
+
+// Mobile: exit intent por scroll reverso rápido
+let lastScrollY = 0, scrollVelocity = 0;
+window.addEventListener('scroll', () => {
+  const current = window.scrollY;
+  scrollVelocity = lastScrollY - current;
+  lastScrollY = current;
+  if (scrollVelocity > 80 && current < 200 && !exitShown && exitArmed) {
+    exitShown = true;
+    showExitIntent();
+  }
+});
+
+function showExitIntent() {
+  const timeOnPage = Math.round((Date.now() - leadData.startTime) / 1000);
+  const depth = leadData.scrollDepth;
+  let msg = 'Nossa IA detectou que você tem interesse. Deixe seu contato e um especialista entra em contato em menos de 2 horas.';
+  if (depth > 60) msg = `Você explorou ${depth}% da página! Quer uma demo personalizada do IACRM para o seu negócio?`;
+  if (timeOnPage > 120) msg = `Você ficou ${Math.round(timeOnPage/60)} minutos conosco. Posso agendar uma conversa com um especialista agora?`;
+  document.getElementById('exit-msg').textContent = msg;
+  document.getElementById('exit-overlay').classList.add('show');
+}
+
+function closeExit() {
+  document.getElementById('exit-overlay').classList.remove('show');
+}
+
+async function exitSubmit() {
+  const nome = document.getElementById('exit-nome').value.trim();
+  const email = document.getElementById('exit-email').value.trim();
+  const wa = document.getElementById('exit-wa').value.trim();
+  if (!nome || (!email && !wa)) {
+    alert('Preencha nome e pelo menos um contato (e-mail ou WhatsApp).');
+    return;
+  }
+  leadData.nome = nome; leadData.email = email; leadData.whatsapp = wa;
+  await captureLead({ nome, email, whatsapp: wa, origem: 'exit_intent' });
+  closeExit();
+  toggleAgent();
+  setTimeout(() => addBotMsg(`Ótimo, ${nome}! 🎉 Recebi seus dados. Um especialista vai entrar em contato via ${wa ? 'WhatsApp' : 'e-mail'} em breve. Posso ajudar com mais alguma coisa?`), 600);
+}
+
+// ── SCROLL DEPTH ──
+window.addEventListener('scroll', () => {
+  const depth = Math.round((window.scrollY + window.innerHeight) / document.body.scrollHeight * 100);
+  if (depth > leadData.scrollDepth) leadData.scrollDepth = depth;
+}, { passive: true });
+
+// ── SECTIONS VIEWED ──
+const sectionObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      if (id && !leadData.sectionsViewed.includes(id)) leadData.sectionsViewed.push(id);
+    }
+  });
+}, { threshold: .3 });
+document.querySelectorAll('section[id]').forEach(s => sectionObserver.observe(s));
+
+// ── TIME ON PAGE ──
+setInterval(() => { leadData.timeOnPage = Math.round((Date.now() - leadData.startTime) / 1000); }, 5000);
+
+// ── CAPTURE LEAD ──
+async function captureLead(extra = {}) {
+  try {
+    const payload = {
+      nome_empresa: extra.nome || leadData.nome || 'Visitante IACRM',
+      email: extra.email || leadData.email || '',
+      whatsapp: extra.whatsapp || leadData.whatsapp || '',
+      origem: extra.origem || 'landing_agent',
+      dados_extra: {
+        sessionId: leadData.sessionId,
+        fingerprint: leadData.fingerprint,
+        scrollDepth: leadData.scrollDepth,
+        timeOnPage: leadData.timeOnPage,
+        sectionsViewed: leadData.sectionsViewed,
+        clickCount: leadData.clickMap.length,
+        mouseExits: leadData.mouseExits,
+        geo: leadData.geo,
+        source: leadData.source,
+        utm: leadData.utm,
+        device: leadData.device,
+        screen: leadData.screen,
+        language: leadData.language,
+        timezone: leadData.timezone,
+        chatMessages: leadData.chatMessages,
+        returning: leadData.returning || false,
+        ...extra,
+      }
+    };
+    await fetch('/api/v1/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer landing_public' },
+      body: JSON.stringify(payload),
+    });
+    if (leadData.cookiesAccepted) {
+      setCookie('iacrm_lead', { nome: extra.nome, email: extra.email, ts: Date.now() }, 90);
+    }
+  } catch(e) { console.log('Lead capture error:', e.message); }
+}
+
+// ═══════════════════════════════════════
+// AGENTE IA — ARIA
+// ═══════════════════════════════════════
+
+let agentOpen = false;
+let awaitingContact = false;
+let contactStep = null; // 'nome'|'email'|'wa'
+let conversationHistory = [];
+
+function toggleAgent() {
+  agentOpen = !agentOpen;
+  const win = document.getElementById('agent-window');
+  if (agentOpen) {
+    win.classList.add('open');
+    document.querySelector('.agent-notif').style.display = 'none';
+    if (conversationHistory.length === 0) initAgentChat();
+    setTimeout(() => document.getElementById('agent-input').focus(), 300);
+  } else {
+    win.classList.remove('open');
+  }
+}
+
+function initAgentChat() {
+  const timeOnPage = Math.round((Date.now() - leadData.startTime) / 1000);
+  let greeting = 'Olá! 👋 Sou a ARIA, agente de IA da IACRM. Como posso ajudar você hoje?';
+  if (leadData.scrollDepth > 40) {
+    greeting = `Olá! Vi que você explorou bastante nossa página 👀 Tem alguma dúvida sobre o IACRM que posso esclarecer?`;
+  }
+  if (leadData.returning) {
+    greeting = `Olá de novo! 👋 Bem-vindo de volta ao IACRM. Posso ajudar com algo específico?`;
+  }
+  setTimeout(() => addBotMsg(greeting), 400);
+}
+
+function addBotMsg(text) {
+  const msgs = document.getElementById('aw-msgs');
+  // typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'msg bot';
+  typing.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  setTimeout(() => {
+    msgs.removeChild(typing);
+    const msg = document.createElement('div');
+    msg.className = 'msg bot';
+    const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    msg.innerHTML = `<div class="msg-avatar">🤖</div><div><div class="msg-bubble">${text}</div><div class="msg-time">${now}</div></div>`;
+    msgs.appendChild(msg);
+    msgs.scrollTop = msgs.scrollHeight;
+    conversationHistory.push({ role: 'assistant', content: text });
+  }, 900 + Math.random() * 600);
+}
+
+function addUserMsg(text) {
+  const msgs = document.getElementById('aw-msgs');
+  const msg = document.createElement('div');
+  msg.className = 'msg user';
+  const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  msg.innerHTML = `<div><div class="msg-bubble">${text}</div><div class="msg-time">${now}</div></div>`;
+  msgs.appendChild(msg);
+  msgs.scrollTop = msgs.scrollHeight;
+  conversationHistory.push({ role: 'user', content: text });
+  leadData.chatMessages++;
+  document.getElementById('aw-quick').style.display = 'none';
+}
+
+async function sendMsg() {
+  const input = document.getElementById('agent-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addUserMsg(text);
+
+  // Coleta de contato
+  if (awaitingContact) {
+    await handleContactCollection(text);
+    return;
+  }
+
+  // Após 3 trocas, pedir contato
+  if (leadData.chatMessages >= 3 && !leadData.nome) {
+    awaitingContact = true;
+    contactStep = 'nome';
+    setTimeout(() => addBotMsg('Para continuar te ajudando melhor, me diz seu **nome** 😊'), 500);
+    return;
+  }
+
+  await callAria(text);
+}
+
+async function handleContactCollection(text) {
+  if (contactStep === 'nome') {
+    leadData.nome = text;
+    contactStep = 'wa';
+    setTimeout(() => addBotMsg(`Ótimo, ${text}! 🎉 Qual seu **WhatsApp** para um especialista entrar em contato?`), 600);
+  } else if (contactStep === 'wa') {
+    leadData.whatsapp = text;
+    contactStep = null;
+    awaitingContact = false;
+    await captureLead({ nome: leadData.nome, whatsapp: text, origem: 'chat_agent' });
+    setTimeout(() => addBotMsg(`Perfeito! Vou acionar um especialista agora. Enquanto isso, posso responder mais alguma dúvida? 🚀`), 600);
+    updateChannelLinks();
+  }
+}
+
+async function callAria(userMsg) {
+  try {
+    // ═══ CONSTRUIR PERFIL COMPORTAMENTAL DETALHADO ═══
+    const perfil = analisarComportamento();
+    
+    // ═══ SISTEMA PROMPT DINAMICAMENTE CONSTRUÍDO ═══
+    const systemPrompt = `
+Você é ARIA, agente de IA da IACRM. Você tem acesso ao perfil comportamental em tempo real do visitante.
+
+=== PERFIL DO VISITANTE ===
+Nome: ${leadData.nome || 'não fornecido'}
+Email: ${leadData.email || 'não fornecido'}
+WhatsApp: ${leadData.whatsapp || 'não fornecido'}
+Geolocalização: ${leadData.geo ? leadData.geo.city + ', ' + leadData.geo.region + ', ' + leadData.geo.country : 'não identificada'}
+Device: ${leadData.device} (${leadData.screen})
+Idioma: ${leadData.language}
+Zona horária: ${leadData.timezone}
+Primeira visita: ${!leadData.returning ? 'Sim' : 'Não — retornando'}
+Tempo na página: ${leadData.timeOnPage}s
+
+=== COMPORTAMENTO NA PÁGINA ===
+Seções visualizadas: ${leadData.sectionsViewed.join(', ') || 'nenhuma'}
+Profundidade de scroll: ${leadData.scrollDepth}% (${perfil.scrollNivel})
+Tempo médio por seção: ${perfil.tempoMédio}s
+Tentativas de sair: ${leadData.mouseExits} (${perfil.interesseNivel})
+Clicks na página: ${leadData.clickMap.length} (${perfil.engajamento})
+Mensagens no chat: ${leadData.chatMessages}
+
+=== ANÁLISE COMPORTAMENTAL NEURAL ===
+🎯 Intenção de Compra: ${perfil.intencao}%
+⚡ Urgência Detectada: ${perfil.urgencia}%
+🤝 Nível de Confiança: ${perfil.confianca}%
+😊 Satisfação Aparente: ${perfil.satisfacao}%
+🔥 Engajamento: ${perfil.engajamento}
+⏰ Melhor Momento para CTA: ${perfil.melhorMomento}
+
+=== ESTILO DE CONVERSA ===
+Baseado no comportamento, use:
+- Tom: ${perfil.tom}
+- Abordagem: ${perfil.abordagem}
+- Velocidade: ${perfil.velocidade}
+- Foco: ${perfil.foco}
+
+=== REGRAS DE CONVERSA ===
+1. NUNCA mencione análise, IA ou comportamento observado — parece invasivo
+2. Seja naturalmente inteligente: note o que ele viu e converse como se fosse amigo
+3. Responda em MÁXIMO 2 frases — conversação, não discurso
+4. Use nomes/contexto: Se ele viu Pipeline, não cite "agentes IA" genérico
+5. Se ${perfil.intencao} > 70%: sugerir demo ou especialista direto
+6. Se ${perfil.intencao} < 40%: fazer perguntas, entender dúvida
+7. Se ${perfil.urgencia} < 30%: combinar com ${perfil.melhorMomento} para CTA
+8. Emojis com moderação — máximo 1 por resposta
+9. SEMPRE encerre com pergunta que avance o diálogo
+
+=== CONTEXTO DO PRODUTO ===
+- WhatsApp nativo (Meta Cloud API, não Twilio)
+- Análise de sentimento 7D em tempo real
+- Automações que mudam de rota por emoção
+- Mapa de calor geolocalizado de leads
+- IA generativa para conteúdo omnichannel
+- Planos: Free (R$0), Starter (R$97), Pro (R$197), Enterprise (R$497)
+
+=== INFORMAÇÕES PASSADAS ===
+${conversationHistory.length > 0 ? 'Histórico: ' + conversationHistory.map(m => (m.role === 'user' ? 'Lead: ' : 'ARIA: ') + m.content).join(' | ') : 'Primeira mensagem'}
+
+Responda naturalmente, como uma pessoa genuinamente interessada em ajudar.
+`;
+
+    // ═══ CHAMAR GEMINI COM CONTEXTO COMPORTAMENTAL ═══
+    const resp = await fetch('/api/v1/insights/ia', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer landing_public'
+      },
+      body: JSON.stringify({ 
+        pergunta: userMsg,
+        contexto: systemPrompt,
+        historico: conversationHistory.slice(-6)
+      }),
+    });
+
+    if (!resp.ok) throw new Error('API error: ' + resp.status);
+    const data = await resp.json();
+    const reply = data.resposta || 'Desculpe, tive um problema. Pode repetir?';
+    
+    // Log comportamental (enviar para análise posterior)
+    console.log('ARIA Response Context:', { 
+      intencao: perfil.intencao, 
+      urgencia: perfil.urgencia,
+      secoesVistas: leadData.sectionsViewed,
+      scrollDepth: leadData.scrollDepth 
+    });
+    
+    addBotMsg(reply);
+  } catch(e) {
+    console.log('Gemini error:', e.message);
+    
+    // Fallback INTELIGENTE — não genérico
+    const perfil = analisarComportamento();
+    let fallback = 'Ótima pergunta! ';
+    
+    if (leadData.sectionsViewed.includes('agentes')) {
+      fallback = 'Vendo que você explorou nossos agentes IA, qual módulo te interessou mais? CX, CS, NPS ou algo específico?';
+    } else if (leadData.sectionsViewed.includes('pricing') || leadData.sectionsViewed.includes('planos')) {
+      fallback = 'Qual tamanho da sua equipe? Porque o Starter cobre bem PMEs, mas o Pro unloca clustering neural completo.';
+    } else if (leadData.scrollDepth > 70) {
+      fallback = 'Você explorou bastante! Quer entender melhor alguma funcionalidade específica ou prefere uma demo?';
+    } else if (leadData.timeOnPage < 30) {
+      fallback = 'Que bom ter você aqui! Me diz: qual seu principal desafio hoje em vendas/atendimento?';
+    } else if (perfil.intencao > 60) {
+      fallback = 'Adorei seu interesse! Posso agendar um especialista em 15 minutos pra uma conversa? 🚀';
+    } else {
+      fallback = 'Ótima pergunta! O IACRM combina CRM tradicional com IA comportamental. O que mais te interessa?';
+    }
+    
+    addBotMsg(fallback);
+  }
+}
+
+// ═══ FUNÇÃO DE ANÁLISE COMPORTAMENTAL ═══
+function analisarComportamento() {
+  const timeOnPageMin = Math.max(1, leadData.timeOnPage / 60);
+  
+  // Scrolldepth = interesse
+  const scrollNivel = leadData.scrollDepth > 80 ? 'PROFUNDA (explorou tudo)' 
+                     : leadData.scrollDepth > 50 ? 'MÉDIA (viu bastante)'
+                     : leadData.scrollDepth > 25 ? 'RASA (exploração inicial)'
+                     : 'MUITO RASA (só topo)';
+  
+  // Tentativos de sair = interesse ao contrário
+  const interesseNivel = leadData.mouseExits > 2 ? 'Testando antes de comprometer'
+                        : leadData.mouseExits > 0 ? 'Curiosidade ativa'
+                        : 'Engajamento total';
+  
+  // Clicks = intenção
+  const engajamento = leadData.clickMap.length > 20 ? 'ALTO — explorando interatividade'
+                     : leadData.clickMap.length > 10 ? 'MÉDIO — testando elementos'
+                     : leadData.clickMap.length > 0 ? 'BAIXO — clicks esparsos'
+                     : 'NENHUM — apenas leitura';
+  
+  // Seções vistas = contexto
+  const temMaisDe = (sec) => leadData.sectionsViewed.includes(sec);
+  const secoesChave = [];
+  if (temMaisDe('agentes')) secoesChave.push('agentes IA');
+  if (temMaisDe('geomap')) secoesChave.push('geolocalização');
+  if (temMaisDe('automacoes')) secoesChave.push('automações');
+  if (temMaisDe('neural')) secoesChave.push('análise neural');
+  if (temMaisDe('planos')) secoesChave.push('planos/preços');
+  
+  // Calcular intenção de compra (0-100)
+  let intencao = 0;
+  intencao += leadData.scrollDepth * 0.3;        // 30% scroll depth
+  intencao += Math.min(20, leadData.clickMap.length); // 20% clicks
+  intencao += (leadData.timeOnPage / 300) * 20;  // 20% tempo (até 5 min)
+  intencao += secoesChave.length * 10;            // 10% seções vistas
+  intencao += (leadData.chatMessages > 0 ? 20 : 0); // 20% se interagiu
+  intencao = Math.min(100, intencao);
+  
+  // Urgência (0-100) — inversamente proporcional a tentativas de sair
+  let urgencia = 100 - (leadData.mouseExits * 20);
+  urgencia = Math.max(20, urgencia);
+  
+  // Confiança (0-100) — tempo + returning visitor
+  let confianca = 50;
+  confianca += leadData.timeOnPage * 0.05;  // tempo aumenta confiança
+  confianca += (leadData.returning ? 30 : 0); // retornante = confiança alta
+  confianca = Math.min(100, confianca);
+  
+  // Satisfação (0-100) — based on smooth browsing (sem irritação)
+  let satisfacao = 70;
+  satisfacao -= leadData.mouseExits * 15;  // muitas saídas = insatisfação
+  satisfacao += leadData.scrollDepth * 0.2; // scroll = explorando = satisfeito
+  satisfacao = Math.max(20, Math.min(100, satisfacao));
+  
+  // Melhor momento para CTA
+  const melhorMomento = urgencia > 70 && intencao > 60 ? 'AGORA (alta intenção + urgência)'
+                       : intencao > 70 ? 'Próxima mensagem (demonstrar valor)'
+                       : urgencia > 60 ? 'Após esclarecer dúvida'
+                       : 'Após mais contexto (pode estar explorando)';
+  
+  // Definir tom de conversa
+  const tom = intencao > 70 ? 'Confiante e direto'
+            : confianca > 70 ? 'Amigável e seguro'
+            : 'Exploratório e questionador';
+  
+  // Abordagem
+  const abordagem = leadData.returning ? 'Retomar conversa anterior'
+                   : secoesChave.length > 3 ? 'Oferecer resumo personalizado'
+                   : secoesChave.length > 0 ? 'Aprofundar no que viu'
+                   : 'Qualificar interesse';
+  
+  // Velocidade
+  const velocidade = leadData.device === 'mobile' ? 'Rápida (mobile = menos paciência)'
+                    : leadData.scrollDepth > 50 ? 'Normal (está explorando)'
+                    : 'Lenta (gerar confiança)';
+  
+  // Foco principal
+  const foco = intencao > 70 ? 'Conversão (agendar demo/especialista)'
+             : urgencia > 60 ? 'Resolver dúvida imediata'
+             : secoesChave.length > 0 ? 'Aprofundar interesse específico'
+             : 'Descobrir necessidade';
+  
+  const tempoMédio = secoesChave.length > 0 ? Math.round(leadData.timeOnPage / secoesChave.length) : leadData.timeOnPage;
+  
+  return {
+    scrollNivel, interesseNivel, engajamento, tempoMédio,
+    intencao: Math.round(intencao),
+    urgencia: Math.round(urgencia),
+    confianca: Math.round(confianca),
+    satisfacao: Math.round(satisfacao),
+    secoesChave,
+    melhorMomento,
+    tom, abordagem, velocidade, foco
+  };
+}
+
+function quickMsg(text) { document.getElementById('agent-input').value = text; sendMsg(); }
+
+function updateChannelLinks() {
+  if (leadData.whatsapp) {
+    const wa = leadData.whatsapp.replace(/\D/g, '');
+    const num = wa.startsWith('55') ? wa : '55' + wa;
+    document.getElementById('wa-link').href = `https://wa.me/${AGENT_CFG.whatsapp}?text=Olá! Vim pelo site do IACRM. Meu nome é ${leadData.nome || 'visitante'}.`;
+  }
+}
+
+function openWhatsApp(e) {
+  e.preventDefault();
+  const nome = leadData.nome || '';
+  const geo = leadData.geo ? ` (${leadData.geo.city || leadData.geo.country || ''})` : '';
+  const msg = encodeURIComponent(`Olá! Vim pelo site do IACRM${geo}. ${nome ? 'Meu nome é ' + nome + '.' : ''} Gostaria de saber mais.`);
+  window.open(`https://wa.me/${AGENT_CFG.whatsapp}?text=${msg}`, '_blank');
+  captureLead({ nome, origem: 'whatsapp_click' });
+}
+
+function openEmail(e) {
+  e.preventDefault();
+  const nome = leadData.nome || 'visitante';
+  window.location.href = `mailto:${AGENT_CFG.email}?subject=Interesse no IACRM&body=Olá! Me chamo ${nome} e tenho interesse no IACRM.`;
+  captureLead({ nome, origem: 'email_click' });
+}
+
+// Abrir agente após 20s se não aberto
+setTimeout(() => {
+  if (!agentOpen && leadData.scrollDepth > 20) {
+    document.querySelector('.agent-notif').textContent = '!';
+    document.getElementById('agent-btn').style.animation = 'agentPulse .8s infinite';
+  }
+}, 20000);
+
+// Abrir automaticamente após 45s de inatividade
+setTimeout(() => {
+  if (!agentOpen && (Date.now() - lastMoveTime) > 15000) {
+    toggleAgent();
+  }
+}, 45000);
+
+
+(function(){
+  const el = document.getElementById('tw-text');
+  if (!el) return;
+  const phrases = [
+    'Analisando sentimento do lead... score: 84/100',
+    'Detectando urgência: ALTA — acionando agente →',
+    'Cluster identificado: "Decisor Técnico"',
+    'Jornada adaptativa iniciada para perfil B2B',
+    'WhatsApp enviado · taxa abertura: 97.3%',
+    'Churn risk detectado · retenção automática ativa',
+    'Insight: Sudeste converte 2.4x mais às 10h',
+    'Pipeline atualizado · R$ 84.000 em negociação',
+    'IA gerando copy personalizado para segmento...',
+    'NPS recebido: 9/10 · promotor identificado ✓',
+  ];
+  let pi = 0, ci = 0, deleting = false, wait = 0;
+  function tick() {
+    const phrase = phrases[pi];
+    if (!deleting) {
+      el.textContent = phrase.slice(0, ci + 1);
+      ci++;
+      if (ci === phrase.length) { deleting = true; wait = 0; setTimeout(tick, 2200); return; }
+      setTimeout(tick, 38 + Math.random() * 28);
+    } else {
+      wait++;
+      el.textContent = phrase.slice(0, phrase.length - wait);
+      if (wait >= phrase.length) { deleting = false; ci = 0; pi = (pi + 1) % phrases.length; setTimeout(tick, 400); return; }
+      setTimeout(tick, 18);
+    }
+  }
+  setTimeout(tick, 1800);
+})();
+
+function animateCounters(){
+  document.querySelectorAll('[data-target]').forEach(el=>{
+    const target=parseInt(el.dataset.target);
+    let current=0;
+    const inc=target/60;
+    const timer=setInterval(()=>{
+      current+=inc;
+      if(current>=target){current=target;clearInterval(timer)}
+      el.textContent=Math.floor(current)+(target===340?'%':target===14?'d':'');
+    },16);
+  });
+}
+setTimeout(animateCounters,1200);
+
+// ── CTA CANVAS ──
+(function(){
+  const c=document.getElementById('cta-canvas');
+  if(!c)return;
+  const ctx=c.getContext('2d');
+  function resize(){c.width=c.offsetWidth;c.height=c.offsetHeight}
+  resize();
+  const nodes=[];
+  for(let i=0;i<60;i++)nodes.push({x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2+.5,p:Math.random()*Math.PI*2});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    nodes.forEach(n=>{
+      n.x+=n.vx;n.y+=n.vy;n.p+=.02;
+      if(n.x<0||n.x>c.width)n.vx*=-1;
+      if(n.y<0||n.y>c.height)n.vy*=-1;
+      const g=(Math.sin(n.p)+1)/2;
+      ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,255,229,${.1+g*.2})`;ctx.fill();
+    });
+    nodes.forEach((n,i)=>{
+      nodes.slice(i+1).forEach(m=>{
+        const d=Math.hypot(n.x-m.x,n.y-m.y);
+        if(d<100){ctx.strokeStyle=`rgba(0,255,229,${(1-d/100)*.08})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(m.x,m.y);ctx.stroke()}
+      });
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

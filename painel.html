@@ -1,0 +1,2805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IACRM — Meu Painel</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --void:#020509;--deep:#04080f;--surface:#071020;--panel:#0a1828;--card:#0d2035;
+  --cyan:#00d4ff;--cb:rgba(0,212,255,0.18);--cdim:rgba(0,212,255,0.07);
+  --violet:#a855f7;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--orange:#f97316;--pink:#f0abfc;
+  --text:#dceeff;--muted:#4d7a9e;--dim:#122338;
+  --sidebar:220px;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Space Grotesk',sans-serif;background:var(--void);color:var(--text);display:flex}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.005) 2px,rgba(0,212,255,0.005) 4px)}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:rgba(4,8,15,0.95);border-right:1px solid var(--cdim);
+  display:flex;flex-direction:column;height:100vh;
+  position:relative;z-index:100;overflow-y:auto;
+}
+.sb-logo{
+  padding:1.25rem 1.25rem 1rem;border-bottom:1px solid var(--cdim);
+  font-family:'Space Mono',monospace;font-weight:700;font-size:1.1rem;
+  letter-spacing:.06em;display:flex;align-items:center;gap:.4rem;flex-shrink:0;
+}
+.lia{color:transparent;background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text}
+.ldot{width:4px;height:4px;border-radius:50%;background:var(--cyan);animation:bl 1.2s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.1}}
+.sb-nav{flex:1;padding:.75rem .5rem;display:flex;flex-direction:column;gap:.15rem}
+.sb-section{
+  font-family:'Space Mono',monospace;font-size:.55rem;color:var(--dim);
+  letter-spacing:.12em;text-transform:uppercase;padding:.5rem .75rem .25rem;margin-top:.5rem;
+}
+.sb-item{
+  display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;
+  border-radius:5px;cursor:pointer;transition:all .2s;
+  font-size:.82rem;color:var(--muted);text-decoration:none;
+  position:relative;
+}
+.sb-item:hover{background:rgba(0,212,255,.05);color:var(--text)}
+.sb-item.active{background:rgba(0,212,255,.08);color:var(--cyan);border-right:2px solid var(--cyan)}
+.sb-ico{font-size:.95rem;width:18px;text-align:center;flex-shrink:0}
+.sb-badge{
+  margin-left:auto;font-family:'Space Mono',monospace;font-size:.58rem;
+  font-weight:700;padding:.15rem .45rem;border-radius:2px;
+  background:rgba(239,68,68,.2);color:var(--red);
+}
+.sb-badge.green{background:rgba(16,185,129,.15);color:var(--green)}
+.sb-bottom{
+  padding:.75rem .75rem 1rem;border-top:1px solid var(--cdim);flex-shrink:0;
+}
+.sb-user{display:flex;align-items:center;gap:.65rem;cursor:pointer;padding:.5rem;border-radius:5px;transition:background .2s}
+.sb-user:hover{background:rgba(255,255,255,.04)}
+.sb-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;
+  color:#000;flex-shrink:0;
+}
+.sb-uname{font-size:.8rem;font-weight:500;line-height:1.3}
+.sb-urole{font-size:.65rem;color:var(--muted);font-family:'Space Mono',monospace}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative;z-index:10}
+.topbar{
+  background:rgba(4,8,15,.9);border-bottom:1px solid var(--cdim);
+  padding:.8rem 1.75rem;display:flex;align-items:center;gap:1rem;
+  flex-shrink:0;backdrop-filter:blur(12px);
+}
+.tb-title{font-size:.95rem;font-weight:600;flex:1}
+.tb-tag{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-left:.5rem;opacity:.7}
+.tb-actions{display:flex;align-items:center;gap:.65rem}
+.tb-btn{
+  background:var(--cyan);color:#000;border:none;border-radius:3px;
+  padding:.5rem 1rem;font-family:'Space Mono',monospace;font-weight:700;
+  font-size:.68rem;letter-spacing:.05em;cursor:pointer;transition:all .2s;
+}
+.tb-btn:hover{background:#fff;box-shadow:0 0 20px rgba(0,212,255,.3)}
+.tb-btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--dim)}
+.tb-btn.ghost:hover{color:var(--text);border-color:var(--cb);box-shadow:none}
+.search-bar{
+  background:rgba(0,0,0,.3);border:1px solid var(--dim);border-radius:4px;
+  padding:.45rem .9rem;color:var(--text);font-size:.82rem;
+  font-family:'Space Grotesk',sans-serif;outline:none;width:220px;
+  transition:border-color .2s;
+}
+.search-bar:focus{border-color:var(--cb)}
+.search-bar::placeholder{color:var(--muted);opacity:.55}
+.notif-btn{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--dim);
+  background:transparent;cursor:pointer;color:var(--muted);transition:all .2s;
+  display:flex;align-items:center;justify-content:center;font-size:.95rem;
+  position:relative;
+}
+.notif-btn:hover{border-color:var(--cb);color:var(--text)}
+.notif-badge{
+  position:absolute;top:-2px;right:-2px;width:8px;height:8px;
+  border-radius:50%;background:var(--red);border:2px solid var(--void);
+}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:1.75rem}
+.page{display:none}
+.page.active{display:block}
+
+/* ── DASHBOARD PAGE ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:1.5rem}
+.kpi-card{
+  background:var(--panel);border:1px solid var(--cdim);border-radius:7px;
+  padding:1.1rem 1.25rem;transition:border-color .3s;cursor:default;
+}
+.kpi-card:hover{border-color:var(--cb)}
+.kpi-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.kpi-label{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.kpi-ico{font-size:1rem}
+.kpi-val{font-family:'Space Mono',monospace;font-size:1.6rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.25rem}
+.kpi-delta{font-size:.72rem;display:flex;align-items:center;gap:.25rem}
+.up{color:var(--green)}.dn{color:var(--red)}.nt{color:var(--muted)}
+
+.dash-mid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.9rem;margin-bottom:1.5rem}
+.dash-card{background:var(--panel);border:1px solid var(--cdim);border-radius:7px;padding:1.1rem}
+.dc-title{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:1rem}
+/* Pipeline bars */
+.pipe-bars{display:flex;flex-direction:column;gap:.55rem}
+.pb-r{display:flex;align-items:center;gap:.6rem}
+.pb-label{font-size:.72rem;min-width:90px;color:var(--text)}
+.pb-track{flex:1;height:5px;background:var(--dim);border-radius:3px;overflow:hidden}
+.pb-fill{height:100%;border-radius:3px;transition:width .8s}
+.pb-val{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);min-width:24px;text-align:right}
+/* Sentiment */
+.sent-rows{display:flex;flex-direction:column;gap:.5rem}
+.sr{display:flex;align-items:center;gap:.55rem}
+.sr-label{font-size:.72rem;min-width:75px;color:var(--muted)}
+.sr-track{flex:1;height:5px;background:var(--dim);border-radius:3px;overflow:hidden}
+.sr-fill{height:100%;border-radius:3px}
+.sr-pct{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);min-width:28px;text-align:right}
+/* Activity */
+.act-list{display:flex;flex-direction:column;gap:.5rem}
+.act-item{display:flex;align-items:flex-start;gap:.55rem;font-size:.75rem}
+.act-ico{font-size:.8rem;flex-shrink:0;margin-top:1px}
+.act-txt{color:var(--muted);line-height:1.4;flex:1}
+.act-t{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--dim);white-space:nowrap}
+
+/* clusters bottom */
+.clusters-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.cl-tag{border-radius:100px;padding:.3rem .75rem;font-family:'Space Mono',monospace;font-size:.62rem;font-weight:700;border:1px solid;cursor:pointer;transition:all .2s}
+.cl-tag:hover{transform:translateY(-1px)}
+
+/* ── TABLE ── */
+.tbl-wrap{background:var(--panel);border:1px solid var(--cdim);border-radius:7px;overflow:hidden}
+.tbl-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.9rem 1.25rem;border-bottom:1px solid var(--cdim);
+}
+.tbl-title{font-size:.88rem;font-weight:600}
+.tbl-sub{font-size:.72rem;color:var(--muted);margin-top:1px}
+table{width:100%;border-collapse:collapse}
+th{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;padding:.65rem 1.1rem;text-align:left;border-bottom:1px solid var(--cdim);background:rgba(0,0,0,.2)}
+td{padding:.7rem 1.1rem;font-size:.8rem;border-bottom:1px solid rgba(0,212,255,.04)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,212,255,.02)}
+.badge{display:inline-flex;align-items:center;gap:.3rem;border-radius:100px;padding:.2rem .65rem;font-family:'Space Mono',monospace;font-size:.6rem;font-weight:700;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08)}
+.b-cyan{color:var(--cyan);border-color:var(--cb);background:rgba(0,212,255,.08)}
+.b-amber{color:var(--amber);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)}
+.b-red{color:var(--red);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08)}
+.b-muted{color:var(--muted);border-color:var(--dim);background:rgba(255,255,255,.03)}
+.b-violet{color:var(--violet);border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.08)}
+.score-bar{display:flex;align-items:center;gap:.4rem}
+.score-track{width:60px;height:4px;background:var(--dim);border-radius:2px;overflow:hidden}
+.score-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--cyan),var(--violet))}
+
+/* ── ACTIONS ── */
+.act-btns{display:flex;gap:.35rem}
+.ab{background:none;border:1px solid var(--dim);border-radius:3px;padding:.3rem .6rem;color:var(--muted);font-size:.68rem;cursor:pointer;transition:all .2s;font-family:'Space Mono',monospace}
+.ab:hover{border-color:var(--cb);color:var(--cyan)}
+.ab.del:hover{border-color:rgba(239,68,68,.4);color:var(--red)}
+
+/* ── WHATSAPP PAGE ── */
+.wa-layout{display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 120px);background:var(--panel);border:1px solid var(--cdim);border-radius:7px;overflow:hidden}
+.wa-list{border-right:1px solid var(--cdim);overflow-y:auto;display:flex;flex-direction:column}
+.wa-list-head{padding:.9rem 1rem;border-bottom:1px solid var(--cdim);flex-shrink:0}
+.wa-search{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--dim);border-radius:4px;padding:.5rem .75rem;color:var(--text);font-size:.78rem;outline:none;font-family:'Space Grotesk',sans-serif}
+.wa-search::placeholder{color:var(--muted);opacity:.5}
+.wa-contact{display:flex;align-items:center;gap:.65rem;padding:.75rem 1rem;cursor:pointer;transition:background .2s;border-bottom:1px solid rgba(0,212,255,.04)}
+.wa-contact:hover{background:rgba(0,212,255,.04)}
+.wa-contact.active{background:rgba(0,212,255,.07)}
+.wa-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;color:#000;flex-shrink:0}
+.wa-cinfo{flex:1;min-width:0}
+.wa-cname{font-size:.82rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wa-clast{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wa-cmeta{display:flex;flex-direction:column;align-items:flex-end;gap:.2rem;flex-shrink:0}
+.wa-time{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted)}
+.wa-unread{width:18px;height:18px;border-radius:50%;background:var(--cyan);color:#000;font-family:'Space Mono',monospace;font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.wa-chat{display:flex;flex-direction:column}
+.wa-chat-head{padding:.85rem 1.25rem;border-bottom:1px solid var(--cdim);display:flex;align-items:center;gap:.75rem;flex-shrink:0}
+.wa-chat-body{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.6rem;background:rgba(0,0,0,.15)}
+.msg-wrap{display:flex;flex-direction:column;max-width:72%}
+.msg-wrap.sent{align-self:flex-end;align-items:flex-end}
+.msg-wrap.recv{align-self:flex-start}
+.msg-bubble{border-radius:10px;padding:.65rem .9rem;font-size:.82rem;line-height:1.5}
+.msg-wrap.sent .msg-bubble{background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.2)}
+.msg-wrap.recv .msg-bubble{background:var(--card);border:1px solid var(--cdim)}
+.msg-time{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);margin-top:.2rem}
+.sent-chip{display:inline-flex;align-items:center;gap:.3rem;background:rgba(0,0,0,.3);border:1px solid var(--cdim);border-radius:100px;padding:.18rem .55rem;margin-top:.3rem;font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted)}
+.wa-input-area{padding:.85rem 1.25rem;border-top:1px solid var(--cdim);display:flex;gap:.65rem;flex-shrink:0}
+.wa-input{flex:1;background:rgba(0,0,0,.35);border:1px solid var(--dim);border-radius:4px;padding:.65rem .9rem;color:var(--text);font-size:.85rem;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:40px;max-height:100px;transition:border-color .2s}
+.wa-input:focus{border-color:var(--cb)}
+.wa-send{background:var(--cyan);color:#000;border:none;border-radius:4px;padding:.65rem 1.1rem;font-family:'Space Mono',monospace;font-weight:700;font-size:.7rem;cursor:pointer;transition:all .2s;letter-spacing:.05em}
+.wa-send:hover{background:#fff}
+/* sentiment inline */
+.sent-inline{background:rgba(0,0,0,.3);border:1px solid var(--cdim);border-radius:6px;padding:.65rem .9rem;margin:.5rem 0}
+.si-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.si-title{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.08em}
+.si-live{display:flex;align-items:center;gap:.3rem;font-family:'Space Mono',monospace;font-size:.58rem;color:var(--green)}
+.si-dot{width:4px;height:4px;border-radius:50%;background:var(--green);animation:bl .8s infinite}
+.si-bars{display:flex;gap:.5rem}
+.si-bar-wrap{flex:1;text-align:center}
+.si-label{font-family:'Space Mono',monospace;font-size:.55rem;color:var(--muted);display:block;margin-bottom:.2rem}
+.si-track{height:40px;background:var(--dim);border-radius:3px;overflow:hidden;display:flex;align-items:flex-end}
+.si-fill{width:100%;border-radius:3px;transition:height .6s}
+.si-pct{font-family:'Space Mono',monospace;font-size:.6rem;font-weight:700;display:block;margin-top:.2rem}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--cb);border-radius:10px;padding:2rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 0 60px rgba(0,212,255,.1)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.modal-title{font-size:1.1rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;transition:color .2s}
+.modal-close:hover{color:var(--text)}
+.form-group{margin-bottom:1.1rem}
+.form-label{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.45rem}
+.form-input{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--dim);border-radius:4px;padding:.75rem .9rem;color:var(--text);font-size:.87rem;font-family:'Space Grotesk',sans-serif;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--cb)}
+.form-input::placeholder{color:var(--muted);opacity:.5}
+select.form-input{cursor:pointer}
+select.form-input option{background:var(--deep);color:var(--text)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.modal-footer{display:flex;gap:.75rem;margin-top:1.5rem;justify-content:flex-end}
+.btn-cancel{background:transparent;border:1px solid var(--dim);border-radius:4px;padding:.7rem 1.5rem;color:var(--muted);font-family:'Space Mono',monospace;font-size:.72rem;cursor:pointer;transition:all .2s}
+.btn-cancel:hover{border-color:var(--cb);color:var(--text)}
+.btn-confirm{background:var(--cyan);color:#000;border:none;border-radius:4px;padding:.7rem 1.75rem;font-family:'Space Mono',monospace;font-weight:700;font-size:.72rem;cursor:pointer;transition:all .2s}
+.btn-confirm:hover{background:#fff;box-shadow:0 0 20px rgba(0,212,255,.3)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:4rem 2rem;color:var(--muted)}
+.empty-ico{font-size:2.5rem;margin-bottom:.75rem;opacity:.5}
+.empty-txt{font-size:.88rem;font-weight:300}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:2000;
+  background:var(--panel);border:1px solid var(--cb);border-radius:6px;
+  padding:.75rem 1.25rem;font-size:.8rem;font-family:'Space Mono',monospace;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;
+  transition:all .3s;pointer-events:none;max-width:320px;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(16,185,129,.4);color:var(--green)}
+.toast.err{border-color:rgba(239,68,68,.4);color:#fca5a5}
+
+/* ── CONTENT GRID ── */
+.content-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.cg-card{background:var(--panel);border:1px solid var(--cdim);border-radius:7px;padding:1.25rem;transition:all .3s;cursor:pointer}
+.cg-card:hover{border-color:var(--cb);transform:translateY(-2px)}
+.cg-plat{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.08em;margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem}
+.cg-title{font-size:.88rem;font-weight:600;margin-bottom:.5rem;line-height:1.4}
+.cg-body{font-size:.77rem;color:var(--muted);line-height:1.55;font-weight:300;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:.75rem}
+.cg-foot{display:flex;align-items:center;justify-content:space-between}
+
+/* ── NPS ── */
+.nps-score{text-align:center;padding:1.5rem;background:var(--panel);border:1px solid var(--cdim);border-radius:7px;margin-bottom:1rem}
+.nps-num{font-family:'Space Mono',monospace;font-size:3.5rem;font-weight:700;color:var(--cyan);letter-spacing:-.03em}
+.nps-label{font-size:.78rem;color:var(--muted);margin-top:.25rem}
+.nps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-bottom:1rem}
+.nps-seg{background:var(--panel);border:1px solid var(--cdim);border-radius:7px;padding:1.1rem;text-align:center}
+.nps-seg-val{font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700;margin-bottom:.25rem}
+.nps-seg-label{font-size:.72rem;color:var(--muted)}
+
+/* ── JORNADAS ── */
+.jorn-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.jorn-card{background:var(--panel);border:1px solid var(--cdim);border-radius:7px;padding:1.25rem;transition:all .3s}
+.jorn-card:hover{border-color:var(--cb)}
+.jc-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem}
+.jc-name{font-size:.88rem;font-weight:600}
+.jc-tipo{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:.2rem}
+.jc-prog{display:flex;flex-direction:column;gap:.3rem}
+.jcp-label{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);display:flex;justify-content:space-between}
+.jcp-track{height:5px;background:var(--dim);border-radius:3px;overflow:hidden;margin-bottom:.5rem}
+.jcp-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:3px}
+.jc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:.75rem}
+
+/* ── CAMPAIGNS ── */
+.camp-table{background:var(--panel);border:1px solid var(--cdim);border-radius:7px;overflow:hidden}
+
+/* ── INSIGHTS ── */
+.ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.ins-card{background:var(--panel);border:1px solid var(--cdim);border-radius:7px;padding:1.25rem}
+.ins-ico{font-size:1.5rem;margin-bottom:.5rem}
+.ins-title{font-size:.88rem;font-weight:600;margin-bottom:.35rem}
+.ins-val{font-family:'Space Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--cyan);margin-bottom:.25rem}
+.ins-sub{font-size:.75rem;color:var(--muted);font-weight:300}
+
+/* RESP */
+@media(max-width:1024px){
+  :root{--sidebar:180px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .dash-mid{grid-template-columns:1fr 1fr}
+  .wa-layout{grid-template-columns:230px 1fr}
+}
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-100%;transition:left .3s;z-index:500}
+  .sidebar.open{left:0}
+  :root{--sidebar:0px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .content-grid{grid-template-columns:1fr 1fr}
+  .jorn-grid{grid-template-columns:1fr}
+}
+.jorn-tab{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:.35rem .85rem;font-family:'Space Mono',monospace;font-size:.7rem;cursor:pointer;transition:all .2s}
+.jorn-tab.active,.jorn-tab:hover{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3);color:var(--cyan)}
+.editor-passo{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:.75rem;position:relative}
+.editor-passo-head{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
+.editor-dia-badge{width:36px;height:36px;border-radius:50%;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.2);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--cyan);font-family:'Space Mono',monospace;font-weight:700;flex-shrink:0}
+.canal-btn{padding:.3rem .65rem;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.7rem;cursor:pointer;font-family:'Space Mono',monospace}
+.canal-btn.active{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.3);color:var(--cyan)}
+
+.wa-ind-bar{display:flex;gap:.6rem;padding:.5rem .9rem;border-bottom:1px solid var(--cdim);background:rgba(0,0,0,.1);flex-shrink:0;overflow-x:auto}
+.wa-ind{background:rgba(255,255,255,.03);border:1px solid var(--cdim);border-radius:5px;padding:.3rem .65rem;text-align:center;white-space:nowrap;flex-shrink:0}
+.wa-ind-v{font-size:.95rem;font-weight:700;font-family:'Space Mono',monospace}
+.wa-ind-l{font-size:.58rem;color:var(--muted)}
+.wa-tab-bar{display:flex;border-bottom:1px solid var(--cdim);flex-shrink:0}
+.wa-tab{flex:1;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'Space Mono',monospace;font-size:.6rem;padding:.5rem .2rem;cursor:pointer;transition:all .2s}
+.wa-tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.wa-contact-pro{padding:.6rem .9rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;display:flex;gap:.65rem;align-items:center;transition:background .15s}
+.wa-contact-pro:hover,.wa-contact-pro.active{background:rgba(0,212,255,.07)}
+.wa-contact-pro.active{border-left:2px solid var(--cyan)}
+.wa-av-pro{width:38px;height:38px;border-radius:50%;background:rgba(0,212,255,.12);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:var(--cyan);flex-shrink:0;position:relative}
+.wa-sdot{width:9px;height:9px;border-radius:50%;border:2px solid var(--bg2);position:absolute;bottom:0;right:0}
+.wa-chat-head-pro{padding:.75rem 1.1rem;border-bottom:1px solid var(--cdim);display:flex;align-items:center;gap:.75rem;background:var(--bg2);flex-shrink:0}
+.wa-chat-body-pro{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.5rem;background:rgba(0,0,0,.12)}
+.wa-input-pro{padding:.65rem 1rem;border-top:1px solid var(--cdim);background:var(--bg2);flex-shrink:0}
+.wa-tools-bar{display:flex;gap:.35rem;margin-bottom:.45rem;flex-wrap:wrap}
+.wa-tool{background:transparent;border:1px solid var(--cdim);color:var(--muted);border-radius:5px;padding:.22rem .5rem;font-size:.65rem;cursor:pointer;font-family:'Space Mono',monospace;transition:all .15s;white-space:nowrap}
+.wa-tool:hover{border-color:rgba(0,212,255,.35);color:var(--cyan)}
+.wa-textarea{flex:1;background:rgba(0,0,0,.2);border:1px solid var(--cdim);border-radius:8px;color:var(--text);font-size:.84rem;padding:.55rem .8rem;resize:none;font-family:inherit;line-height:1.45;min-height:38px;max-height:110px}
+.wa-textarea:focus{outline:none;border-color:rgba(0,212,255,.4)}
+.wa-send-btn{background:var(--cyan);color:#0a0f1e;border:none;border-radius:8px;padding:.55rem 1rem;font-weight:700;font-size:.75rem;cursor:pointer;font-family:'Space Mono',monospace;flex-shrink:0}
+.msg-row{display:flex;align-items:flex-end;gap:.4rem}
+.msg-row.sent{flex-direction:row-reverse}
+.msg-bub{max-width:68%;padding:.55rem .8rem;border-radius:12px;font-size:.83rem;line-height:1.5;word-break:break-word}
+.msg-row.sent .msg-bub{background:var(--cyan);color:#0a0f1e;border-radius:12px 12px 0 12px}
+.msg-row.recv .msg-bub{background:rgba(255,255,255,.07);border-radius:12px 12px 12px 0}
+.msg-meta{font-size:.6rem;color:var(--muted);flex-shrink:0;margin-bottom:2px}
+.wa-profile-col{border-left:1px solid var(--cdim);display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);width:240px;flex-shrink:0}
+.wa-prof-head{padding:1rem;text-align:center;border-bottom:1px solid var(--cdim);flex-shrink:0}
+.wa-prof-body{flex:1;overflow-y:auto;padding:.9rem}
+.prof-section{font-size:.62rem;color:var(--cyan);letter-spacing:.08em;margin:.85rem 0 .45rem}
+.prof-row{display:flex;flex-direction:column;margin-bottom:.5rem}
+.prof-lbl{font-size:.62rem;color:var(--muted)}
+.prof-val{font-size:.78rem;color:var(--text);margin-top:1px}
+.resp-chip{background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.18);border-radius:5px;padding:.3rem .6rem;font-size:.72rem;cursor:pointer;color:var(--text);white-space:nowrap}
+.resp-chip:hover{background:rgba(0,212,255,.15)}
+
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo"><span class="lia">IA</span>CRM<div class="ldot"></div></div>
+  <nav class="sb-nav">
+    <div class="sb-section">principal</div>
+    <a class="sb-item active" onclick="showPage('dashboard',this)"><span class="sb-ico">📡</span>Dashboard</a>
+    <a class="sb-item" onclick="showPage('leads',this)"><span class="sb-ico">🎯</span>Leads<span class="sb-badge green" id="badge-leads">0</span></a>
+    <a class="sb-item" onclick="showPage('clientes',this)"><span class="sb-ico">🤝</span>Clientes</a>
+    <a class="sb-item" onclick="showPage('pipeline',this)"><span class="sb-ico">📊</span>Pipeline</a>
+
+    <div class="sb-section">comunicação</div>
+    <a class="sb-item" onclick="showPage('whatsapp',this)"><span class="sb-ico">💬</span>WhatsApp<span class="sb-badge" id="badge-wa">0</span></a>
+    <a class="sb-item" onclick="showPage('campanhas',this)"><span class="sb-ico">🚀</span>Campanhas</a>
+    <a class="sb-item" onclick="showPage('jornadas',this)"><span class="sb-ico">🔄</span>Jornadas</a>
+
+    <div class="sb-section">inteligência</div>
+    <a class="sb-item" onclick="showPage('conteudo',this)"><span class="sb-ico">✍️</span>Conteúdo IA</a>
+    <a class="sb-item" onclick="showPage('nps',this)"><span class="sb-ico">📈</span>NPS / CES</a>
+    <a class="sb-item" onclick="showPage('insights',this)"><span class="sb-ico">🧠</span>Insights</a>
+    <a class="sb-item" onclick="showPage('clusters',this)"><span class="sb-ico">🧬</span>Clusters IA</a>
+
+    <div class="sb-section">configurações</div>
+    <a class="sb-item" onclick="showPage('integracoes',this)"><span class="sb-ico">🔌</span>Integrações</a>
+    <a class="sb-item" onclick="showPage('config',this)"><span class="sb-ico">⚙️</span>Configurações</a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user" onclick="showPage('config',null)" style="cursor:pointer">
+      <div class="sb-avatar" id="sb-av">IA</div>
+      <div style="flex:1;min-width:0">
+        <div class="sb-uname" id="sb-name">Carregando...</div>
+        <div class="sb-urole" id="sb-role">admin</div>
+      </div>
+    </div>
+    <button onclick="if(confirm('Sair da plataforma?')){localStorage.clear();window.location.href='/login'}"
+      style="width:100%;background:transparent;border:none;border-top:1px solid var(--cdim);color:var(--muted);font-size:.72rem;padding:.6rem 1rem;text-align:left;cursor:pointer;font-family:'Space Mono',monospace;letter-spacing:.04em"
+      onmouseover="this.style.color='#ff5050'" onmouseout="this.style.color='var(--muted)'">
+      ⏻ SAIR
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="tb-title" id="page-title">Dashboard <span class="tb-tag">// NEURAL ONLINE</span></div>
+    <div class="tb-actions">
+      <input type="text" class="search-bar" placeholder="Buscar...">
+      <button onclick="showWizard()" class="notif-btn" title="Assistente de configuração" style="font-size:.7rem;letter-spacing:.05em">⚙</button>
+      <button class="notif-btn" id="notif-btn">🔔<span class="notif-badge"></span></button>
+      <button class="tb-btn" id="tb-main-btn" onclick="mainAction()">+ NOVO LEAD</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div id="page-dashboard" class="page active">
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card"><div class="kpi-head"><span class="kpi-label">Leads ativos</span><span class="kpi-ico">🎯</span></div><div class="kpi-val" style="color:var(--cyan)" id="k-leads">0</div><div class="kpi-delta up">↑ atualizado</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span class="kpi-label">Clientes</span><span class="kpi-ico">🤝</span></div><div class="kpi-val" style="color:var(--green)" id="k-clientes">0</div><div class="kpi-delta up">↑ atualizado</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span class="kpi-label">MRR</span><span class="kpi-ico">💰</span></div><div class="kpi-val" style="color:var(--amber)" id="k-mrr">R$0</div><div class="kpi-delta up">↑ atualizado</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span class="kpi-label">NPS Score</span><span class="kpi-ico">📈</span></div><div class="kpi-val" style="color:var(--violet)" id="k-nps">—</div><div class="kpi-delta nt">último mês</div></div>
+      </div>
+      <!-- clusters -->
+      <div class="clusters-row" id="clusters-row">
+        <div class="cl-tag" style="color:var(--cyan);border-color:rgba(0,212,255,.3);background:rgba(0,212,255,.08)">🔵 Decisores · 312</div>
+        <div class="cl-tag" style="color:var(--green);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08)">🟢 Alta urgência · 189</div>
+        <div class="cl-tag" style="color:var(--amber);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)">🟡 Nutrição · 847</div>
+        <div class="cl-tag" style="color:var(--violet);border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.08)">🟣 Reativação · 234</div>
+        <div class="cl-tag" style="color:var(--red);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08)">🔴 Detratores · 76</div>
+        <div class="cl-tag" style="color:var(--orange);border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.08)">🟠 Pré-compra · 421</div>
+        <div class="cl-tag" style="color:#22d3ee;border-color:rgba(34,211,238,.3);background:rgba(34,211,238,.08)">🩵 Champions · 156</div>
+      </div>
+      <div class="dash-mid">
+        <!-- pipeline -->
+        <div class="dash-card">
+          <div class="dc-title">// PIPELINE POR ETAPA</div>
+          <div class="pipe-bars">
+            <div class="pb-r"><span class="pb-label">Prospecção</span><div class="pb-track"><div class="pb-fill" style="width:75%;background:linear-gradient(90deg,var(--cyan),#0099cc)"></div></div><span class="pb-val">75%</span></div>
+            <div class="pb-r"><span class="pb-label">Qualificação</span><div class="pb-track"><div class="pb-fill" style="width:55%;background:linear-gradient(90deg,var(--violet),#9333ea)"></div></div><span class="pb-val">55%</span></div>
+            <div class="pb-r"><span class="pb-label">Proposta</span><div class="pb-track"><div class="pb-fill" style="width:38%;background:linear-gradient(90deg,var(--amber),#d97706)"></div></div><span class="pb-val">38%</span></div>
+            <div class="pb-r"><span class="pb-label">Negociação</span><div class="pb-track"><div class="pb-fill" style="width:22%;background:linear-gradient(90deg,var(--orange),#ea580c)"></div></div><span class="pb-val">22%</span></div>
+            <div class="pb-r"><span class="pb-label">Fechado ✓</span><div class="pb-track"><div class="pb-fill" style="width:15%;background:linear-gradient(90deg,var(--green),#059669)"></div></div><span class="pb-val">15%</span></div>
+          </div>
+        </div>
+        <!-- sentimento -->
+        <div class="dash-card">
+          <div class="dc-title">// SENTIMENTO DA BASE — 7D</div>
+          <div class="sent-rows">
+            <div class="sr"><span class="sr-label">Interesse</span><div class="sr-track"><div class="sr-fill" style="width:87%;background:linear-gradient(90deg,var(--cyan),#0099cc)"></div></div><span class="sr-pct">87%</span></div>
+            <div class="sr"><span class="sr-label">Confiança</span><div class="sr-track"><div class="sr-fill" style="width:74%;background:linear-gradient(90deg,var(--green),#059669)"></div></div><span class="sr-pct">74%</span></div>
+            <div class="sr"><span class="sr-label">Urgência</span><div class="sr-track"><div class="sr-fill" style="width:62%;background:linear-gradient(90deg,var(--amber),#d97706)"></div></div><span class="sr-pct">62%</span></div>
+            <div class="sr"><span class="sr-label">Entusiasmo</span><div class="sr-track"><div class="sr-fill" style="width:68%;background:linear-gradient(90deg,var(--violet),#9333ea)"></div></div><span class="sr-pct">68%</span></div>
+            <div class="sr"><span class="sr-label">Hesitação</span><div class="sr-track"><div class="sr-fill" style="width:31%;background:linear-gradient(90deg,var(--red),#dc2626)"></div></div><span class="sr-pct">31%</span></div>
+          </div>
+        </div>
+        <!-- activity -->
+        <div class="dash-card">
+          <div class="dc-title">// ATIVIDADE NEURAL — AO VIVO</div>
+          <div class="act-list" id="dash-feed">
+            <div class="act-item"><span class="act-ico">🧠</span><span class="act-txt">Motor neural inicializado</span><span class="act-t">agora</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LEADS ══ -->
+    <div id="page-leads" class="page">
+      <div class="tbl-wrap">
+        <div class="tbl-head">
+          <div><div class="tbl-title">Leads</div><div class="tbl-sub" id="leads-count">Carregando...</div></div>
+          <button class="tb-btn" onclick="openModal('lead')">+ NOVO LEAD</button>
+        </div>
+        <table><thead><tr>
+          <th>Empresa</th><th>Contato</th><th>Status</th><th>Score</th><th>Origem</th><th>Criado</th><th>Ações</th>
+        </tr></thead><tbody id="leads-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══ CLIENTES ══ -->
+    <div id="page-clientes" class="page">
+      <div class="tbl-wrap">
+        <div class="tbl-head">
+          <div><div class="tbl-title">Clientes</div><div class="tbl-sub" id="clientes-count">Carregando...</div></div>
+          <button class="tb-btn" onclick="openModal('cliente')">+ NOVO CLIENTE</button>
+        </div>
+        <table><thead><tr>
+          <th>Empresa</th><th>Contato</th><th>Plano</th><th>MRR</th><th>Status</th><th>Início</th><th>Ações</th>
+        </tr></thead><tbody id="clientes-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══ PIPELINE ══ -->
+    <div id="page-pipeline" class="page">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem" id="kanban"></div>
+    </div>
+
+    <!-- ══ WHATSAPP ══ -->
+    <div id="page-whatsapp" class="page" style="padding:0;overflow:hidden">
+      <div style="display:flex;flex-direction:column;height:calc(100vh - 60px);background:var(--panel);border:1px solid var(--cdim);border-radius:7px;overflow:hidden">
+        <div class="wa-ind-bar">
+          <div class="wa-ind"><div class="wa-ind-v" id="ind-total">0</div><div class="wa-ind-l">Total</div></div>
+          <div class="wa-ind"><div class="wa-ind-v" id="ind-aguardando" style="color:var(--amber)">0</div><div class="wa-ind-l">Aguardando</div></div>
+          <div class="wa-ind"><div class="wa-ind-v" id="ind-atendendo" style="color:var(--cyan)">0</div><div class="wa-ind-l">Atendendo</div></div>
+          <div class="wa-ind"><div class="wa-ind-v" id="ind-finalizados" style="color:var(--green)">0</div><div class="wa-ind-l">Finalizados</div></div>
+          <div style="flex:1"></div>
+          <button class="tb-btn" onclick="novoContatoWA()" style="font-size:.68rem;align-self:center;flex-shrink:0">+ CONTATO</button>
+        </div>
+        <div style="display:flex;flex:1;overflow:hidden">
+          <div style="display:flex;flex-direction:column;width:280px;flex-shrink:0;border-right:1px solid var(--cdim);background:var(--bg2);overflow:hidden">
+            <div style="padding:.6rem .75rem;border-bottom:1px solid var(--cdim);flex-shrink:0">
+              <input type="text" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.2);border:1px solid var(--cdim);border-radius:6px;color:var(--text);padding:.4rem .7rem;font-size:.78rem;outline:none" placeholder="Buscar..." oninput="filtrarContatosWA(this.value)">
+            </div>
+            <div class="wa-tab-bar">
+              <button class="wa-tab active" id="watab-todos" onclick="switchWaTab('todos')">Todos</button>
+              <button class="wa-tab" id="watab-aguardando" onclick="switchWaTab('aguardando')">Aguard.</button>
+              <button class="wa-tab" id="watab-atendendo" onclick="switchWaTab('atendendo')">Atend.</button>
+              <button class="wa-tab" id="watab-finalizado" onclick="switchWaTab('finalizado')">Final.</button>
+            </div>
+            <div id="wa-contacts-list" style="flex:1;overflow-y:auto"></div>
+          </div>
+          <div id="wa-chat-area" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+            <div class="empty"><div class="empty-ico">💬</div><div class="empty-txt">Selecione uma conversa</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CAMPANHAS ══ -->
+    <div id="page-campanhas" class="page">
+      <div class="camp-table">
+        <div class="tbl-head">
+          <div><div class="tbl-title">Campanhas</div><div class="tbl-sub" id="camp-count">—</div></div>
+          <button class="tb-btn" onclick="openModal('campanha')">+ NOVA CAMPANHA</button>
+        </div>
+        <table><thead><tr>
+          <th>Nome</th><th>Tipo</th><th>Status</th><th>Enviados</th><th>Criado</th><th>Ações</th>
+        </tr></thead><tbody id="camp-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══ JORNADAS ══ -->
+    <div id="page-jornadas" class="page">
+      <!-- Abas -->
+      <div style="display:flex;gap:.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border);padding-bottom:.75rem;align-items:center">
+        <button class="jorn-tab active" id="tab-ativas" onclick="switchJornTab('ativas')">🔄 Ativas</button>
+        <button class="jorn-tab" id="tab-templates" onclick="switchJornTab('templates')">📋 Templates</button>
+        <button class="jorn-tab" id="tab-editor" onclick="switchJornTab('editor')">✏️ Editor</button>
+        <div style="flex:1"></div>
+        <button class="tb-btn" onclick="openModal('jornada')">+ NOVA JORNADA</button>
+      </div>
+
+      <!-- Aba: Ativas -->
+      <div id="jorn-tab-ativas">
+        <div class="jorn-grid" id="jorn-grid"></div>
+      </div>
+
+      <!-- Aba: Templates -->
+      <div id="jorn-tab-templates" style="display:none">
+        <div id="jorn-templates-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem"></div>
+      </div>
+
+      <!-- Aba: Editor Visual -->
+      <div id="jorn-tab-editor" style="display:none">
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:1.25rem;min-height:500px">
+          <!-- Sidebar: lista de jornadas para editar -->
+          <div class="dash-card" style="padding:.75rem">
+            <div class="dc-title" style="margin-bottom:.75rem">// SELECIONAR JORNADA</div>
+            <div id="editor-jorn-list" style="display:flex;flex-direction:column;gap:.4rem">
+              <div style="color:var(--muted);font-size:.78rem;text-align:center;padding:1rem">Carregando...</div>
+            </div>
+            <button class="tb-btn" style="width:100%;margin-top:.75rem;font-size:.7rem" onclick="criarJornadaTemplate()">+ CRIAR DO ZERO</button>
+          </div>
+
+          <!-- Editor de passos -->
+          <div class="dash-card" id="editor-main" style="padding:1.25rem">
+            <div style="color:var(--muted);font-size:.85rem;text-align:center;padding:3rem">
+              Selecione uma jornada ao lado para editar seus passos.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CONTEÚDO IA ══ -->
+    <div id="page-conteudo" class="page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <div><div style="font-size:.95rem;font-weight:600">Conteúdo IA</div><div style="font-size:.75rem;color:var(--muted);margin-top:2px">Geração automática por plataforma</div></div>
+        <button class="tb-btn" onclick="openModal('conteudo')">+ GERAR COM IA</button>
+      </div>
+      <div class="content-grid" id="content-grid"></div>
+    </div>
+
+    <!-- ══ NPS ══ -->
+    <div id="page-nps" class="page">
+      <div class="nps-grid">
+        <div class="nps-seg"><div class="nps-seg-val" style="color:var(--green)" id="nps-promotores">—</div><div class="nps-seg-label">Promotores (9-10)</div></div>
+        <div class="nps-seg"><div class="nps-seg-val" style="color:var(--amber)" id="nps-neutros">—</div><div class="nps-seg-label">Neutros (7-8)</div></div>
+        <div class="nps-seg"><div class="nps-seg-val" style="color:var(--red)" id="nps-detratores">—</div><div class="nps-seg-label">Detratores (0-6)</div></div>
+      </div>
+      <div class="nps-score"><div class="nps-num" id="nps-score-val">—</div><div class="nps-label">NPS Score atual</div></div>
+      <div class="tbl-wrap">
+        <div class="tbl-head">
+          <div><div class="tbl-title">Campanhas NPS</div></div>
+          <button class="tb-btn" onclick="openModal('nps')">+ NOVA CAMPANHA</button>
+        </div>
+        <table><thead><tr><th>Nome</th><th>Respostas</th><th>Score</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nps-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══ INSIGHTS ══ -->
+    <div id="page-insights" class="page">
+      <div class="ins-grid">
+        <div class="ins-card"><div class="ins-ico">🎯</div><div class="ins-title">Taxa de conversão</div><div class="ins-val" id="ins-conv">—</div><div class="ins-sub">leads → clientes</div></div>
+        <div class="ins-card"><div class="ins-ico">⭐</div><div class="ins-title">Melhor origem</div><div class="ins-val" id="ins-orig" style="font-size:.95rem">—</div><div class="ins-sub">canal que mais converte</div></div>
+        <div class="ins-card"><div class="ins-ico">🧠</div><div class="ins-title">Score médio de leads</div><div class="ins-val" id="ins-score">—</div><div class="ins-sub">comportamento neural</div></div>
+        <div class="ins-card"><div class="ins-ico">💬</div><div class="ins-title">NPS médio geral</div><div class="ins-val" id="ins-nps">—</div><div class="ins-sub">satisfação da base</div></div>
+      </div>
+      <div class="dash-card" style="margin-top:1rem">
+        <div class="dc-title">// PERGUNTAR PARA A IA</div>
+        <div style="display:flex;gap:.75rem;margin-top:.75rem">
+          <input type="text" id="insight-q" class="form-input" placeholder="Ex: Qual segmento tem maior conversão?" style="flex:1">
+          <button class="tb-btn" onclick="askInsight()">ANALISAR →</button>
+        </div>
+        <div id="insight-resp" style="margin-top:1rem;display:none">
+          <div style="font-family:'Space Mono',monospace;font-size:.6rem;color:var(--cyan);letter-spacing:.08em;margin-bottom:.5rem">// RESPOSTA DA IA</div>
+          <div id="insight-txt" style="font-size:.85rem;color:var(--muted);line-height:1.7;font-weight:300"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CLUSTERS ══ -->
+    <div id="page-clusters" class="page">
+      <!-- KPIs dinâmicos -->
+      <div class="kpi-grid" id="clusters-kpis">
+        <div class="kpi-card"><div class="kpi-head"><span class="kpi-label">Total leads</span><span class="kpi-ico">🧬</span></div><div class="kpi-val" id="cl-total" style="color:var(--cyan)">—</div><div class="kpi-delta nt">na base</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span class="kpi-label">Prontos pra comprar</span><span class="kpi-ico">🔥</span></div><div class="kpi-val" id="cl-hot" style="color:#ef4444">—</div><div class="kpi-delta nt">score ≥ 70</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span class="kpi-label">Em consideração</span><span class="kpi-ico">🤔</span></div><div class="kpi-val" id="cl-warm" style="color:#f59e0b">—</div><div class="kpi-delta nt">score 40–69</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span class="kpi-label">Estados com leads</span><span class="kpi-ico">📍</span></div><div class="kpi-val" id="cl-estados" style="color:var(--green)">—</div><div class="kpi-delta nt">cobertura geo</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1.25rem">
+
+        <!-- Clusters comportamentais -->
+        <div class="dash-card" style="grid-column:1/2">
+          <div class="dc-title">// CLUSTERS NEURAIS — DADOS REAIS</div>
+          <div id="clusters-list" style="display:flex;flex-direction:column;gap:.75rem;margin-top:.75rem">
+            <div style="color:var(--muted);font-size:.82rem;text-align:center;padding:2rem">Carregando clusters...</div>
+          </div>
+        </div>
+
+        <!-- Mapa de calor geográfico -->
+        <div class="dash-card" style="grid-column:2/3">
+          <div class="dc-title">// MAPA DE CALOR — TOP ESTADOS</div>
+          <div id="geo-heatmap" style="display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem">
+            <div style="color:var(--muted);font-size:.82rem;text-align:center;padding:2rem">Carregando mapa...</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ INTEGRAÇÕES ══ -->
+    <div id="page-integracoes" class="page">
+      <div class="content-grid" id="int-grid">
+        <div class="cg-card"><div class="cg-plat">💬 META CLOUD API</div><div class="cg-title">WhatsApp Business</div><div class="cg-body">Conecte seu número WhatsApp via Meta Cloud API. Receba e envie mensagens com análise de sentimento neural.</div><div class="cg-foot"><div class="badge b-green">Conectado</div><button class="ab">Configurar</button></div></div>
+        <div class="cg-card"><div class="cg-plat">📧 RESEND</div><div class="cg-title">E-mail via Resend</div><div class="cg-body">Envio transacional e campanhas via Resend. Personalização por cluster, templates HTML e tracking de abertura.</div><div class="cg-foot"><div class="badge b-muted">Desconectado</div><button class="tb-btn" onclick="openModal('integracao')">Conectar</button></div></div>
+        <div class="cg-card"><div class="cg-plat">🤖 GEMINI AI</div><div class="cg-title">Google Gemini 2.0</div><div class="cg-body">Motor de IA generativa para conteúdo, análise de sentimento, respostas contextuais e insights comportamentais.</div><div class="cg-foot"><div class="badge b-green">Conectado</div><button class="ab">Configurar</button></div></div>
+        <div class="cg-card"><div class="cg-plat">📱 SMS</div><div class="cg-title">SMS Inteligente</div><div class="cg-body">Configure seu provedor de SMS preferido (Twilio, Zenvia, etc). Disparos automáticos com timing otimizado por IA.</div><div class="cg-foot"><div class="badge b-muted">Desconectado</div><button class="tb-btn" onclick="openModal('integracao')">Conectar</button></div></div>
+        <div class="cg-card"><div class="cg-plat">🔔 PUSH</div><div class="cg-title">Push Notifications</div><div class="cg-body">Web push para Chrome, Firefox e Safari. Mobile push via Firebase. Segmentação comportamental automática.</div><div class="cg-foot"><div class="badge b-muted">Desconectado</div><button class="tb-btn" onclick="openModal('integracao')">Conectar</button></div></div>
+        <div class="cg-card"><div class="cg-plat">🔌 WEBHOOKS</div><div class="cg-title">API & Webhooks</div><div class="cg-body">Configure endpoints para receber eventos em tempo real: lead criado, pipeline movido, mensagem recebida.</div><div class="cg-foot"><div class="badge b-cyan">Ativo</div><button class="ab">Configurar</button></div></div>
+      </div>
+    </div>
+
+    <!-- ══ CONFIG ══ -->
+    <div id="page-config" class="page">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+        <div class="dash-card">
+          <div class="dc-title">// DADOS DO TENANT</div>
+          <div class="form-group"><label class="form-label">Nome da empresa</label><input id="cfg-nome" class="form-input" placeholder="Nome"></div>
+          <div class="form-group"><label class="form-label">Cor primária</label><input id="cfg-cor" type="color" class="form-input" value="#00d4ff" style="height:42px;cursor:pointer;padding:.3rem"></div>
+          <button class="tb-btn" onclick="saveConfig()" style="width:100%">SALVAR →</button>
+        </div>
+        <div class="dash-card">
+          <div class="dc-title">// API KEYS</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.9rem;font-weight:300">Gere chaves de API para integrações externas com a plataforma IACRM.</div>
+          <button class="tb-btn" onclick="openModal('apikey')" style="width:100%;margin-bottom:.75rem">+ GERAR API KEY</button>
+          <div id="apikeys-list" style="display:flex;flex-direction:column;gap:.5rem"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-title">// WHATSAPP</div>
+          <div class="form-group"><label class="form-label">Phone ID</label><input id="cfg-wphone" class="form-input" placeholder="Ex: 123456789"></div>
+          <div class="form-group"><label class="form-label">Token de acesso</label><input id="cfg-wtoken" class="form-input" type="password" placeholder="Token Meta"></div>
+          <div class="form-group"><label class="form-label">WABA ID</label><input id="cfg-wwaba" class="form-input" placeholder="ID da conta WhatsApp"></div>
+          <button class="tb-btn" onclick="saveWhatsApp()" style="width:100%">SALVAR WHATSAPP →</button>
+        </div>
+        <div class="dash-card">
+          <div class="dc-title">// E-MAIL (RESEND) + IDENTIDADE VISUAL</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.9rem">Configure o e-mail e a identidade visual que aparece nas jornadas dos seus clientes.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+            <div class="form-group"><label class="form-label">API Key Resend</label><input id="cfg-resend-key" class="form-input" type="password" placeholder="re_..."></div>
+            <div class="form-group"><label class="form-label">E-mail remetente</label><input id="cfg-email-from" class="form-input" placeholder="Empresa &lt;noreply@dominio.com.br&gt;"></div>
+            <div class="form-group"><label class="form-label">Site</label><input id="cfg-email-site" class="form-input" placeholder="https://suaempresa.com.br"></div>
+            <div class="form-group"><label class="form-label">Instagram</label><input id="cfg-email-instagram" class="form-input" placeholder="@suaempresa"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Texto do rodapé</label><input id="cfg-email-rodape" class="form-input" placeholder="Ex: Rua X, 123 — Cidade/UF — CNPJ 00.000.000/0001-00"></div>
+          <div style="display:flex;gap:.5rem;margin-top:.5rem">
+            <button class="tb-btn" onclick="saveEmailConfig()" style="flex:2">SALVAR →</button>
+            <button class="btn-cancel" onclick="testarEmail()" style="flex:1">TESTAR</button>
+          </div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-title">// SMS</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.9rem">Configure Zenvia ou Twilio para disparos de SMS nas jornadas.</div>
+          <div class="form-group">
+            <label class="form-label">Provedor</label>
+            <select id="cfg-sms-provedor" class="form-input" style="background:var(--bg2)" onchange="toggleSMSFields()">
+              <option value="">Selecione...</option>
+              <option value="zenvia">Zenvia</option>
+              <option value="twilio">Twilio</option>
+            </select>
+          </div>
+          <div id="sms-zenvia-fields">
+            <div class="form-group"><label class="form-label">Token Zenvia</label><input id="cfg-zenvia-token" class="form-input" type="password" placeholder="Token API Zenvia"></div>
+            <div class="form-group"><label class="form-label">Remetente (from)</label><input id="cfg-zenvia-from" class="form-input" placeholder="Ex: IACRM"></div>
+          </div>
+          <div id="sms-twilio-fields" style="display:none">
+            <div class="form-group"><label class="form-label">Account SID</label><input id="cfg-twilio-sid" class="form-input" placeholder="ACxxxxxxxx"></div>
+            <div class="form-group"><label class="form-label">Auth Token</label><input id="cfg-twilio-token" class="form-input" type="password" placeholder="Token Twilio"></div>
+            <div class="form-group"><label class="form-label">Número from</label><input id="cfg-twilio-from" class="form-input" placeholder="+5511999999999"></div>
+          </div>
+          <button class="tb-btn" onclick="saveSMSConfig()" style="width:100%">SALVAR SMS →</button>
+        </div>
+        <div class="dash-card">
+          <div class="dc-title">// USUÁRIOS</div>
+          <div id="users-list" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:.75rem"></div>
+          <button class="tb-btn" onclick="openModal('usuario')" style="width:100%">+ NOVO USUÁRIO</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODAL UNIVERSAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">Modal</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">CANCELAR</button>
+      <button class="btn-confirm" id="modal-confirm" onclick="modalConfirm()">CONFIRMAR →</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api/crm';
+let TOKEN = localStorage.getItem('iacrm_token');
+let USER = JSON.parse(localStorage.getItem('iacrm_user') || '{}');
+let TENANT = JSON.parse(localStorage.getItem('iacrm_tenant') || '{}');
+let currentModal = '';
+
+if (!TOKEN) window.location.href = '/login';
+
+// ── AUTH HEADER ──
+function hdr() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN }; }
+
+async function api(path, method = 'GET', body) {
+  try {
+    const r = await fetch(API + path, { method, headers: hdr(), body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 401) { localStorage.clear(); window.location.href = '/login'; return null; }
+    return await r.json();
+  } catch { return null; }
+}
+
+// ── TOAST ──
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── INIT ──
+function initUI() {
+  const av = document.getElementById('sb-av');
+  const name = document.getElementById('sb-name');
+  const role = document.getElementById('sb-role');
+  // Suporta diferentes estruturas do objeto USER
+  const nomeUser = USER.nome || USER.name || USER.email || 'Admin';
+  const papelUser = USER.papel || USER.role || 'admin';
+  av.textContent = nomeUser.substring(0, 2).toUpperCase();
+  name.textContent = nomeUser;
+  role.textContent = papelUser;
+  loadDashboard();
+    checkFirstSetup();
+}
+
+// ── PAGE NAVIGATION ──
+const pageTitles = {
+  dashboard: 'Dashboard', leads: 'Leads', clientes: 'Clientes', pipeline: 'Pipeline',
+  whatsapp: 'WhatsApp Inbox', campanhas: 'Campanhas', jornadas: 'Jornadas Adaptativas',
+  conteudo: 'Conteúdo IA', nps: 'NPS / CES', insights: 'Insights Comportamentais',
+  clusters: 'Clusters Neurais', integracoes: 'Integrações', config: 'Configurações'
+};
+const mainBtns = {
+  leads: '+ NOVO LEAD', clientes: '+ NOVO CLIENTE', pipeline: '+ NOVO NEGÓCIO',
+  campanhas: '+ NOVA CAMPANHA', jornadas: '+ NOVA JORNADA', conteudo: '+ GERAR COM IA',
+  whatsapp: '+ NOVO CONTATO'
+};
+
+function showPage(name, el) {
+  if (name !== 'whatsapp' && typeof waPollingTimer !== 'undefined' && waPollingTimer) {
+    clearInterval(waPollingTimer); waPollingTimer = null;
+  }
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('page-title').innerHTML = (pageTitles[name] || name) + ' <span class="tb-tag">// NEURAL ONLINE</span>';
+  const btnEl = document.getElementById('tb-main-btn');
+  btnEl.textContent = mainBtns[name] || '+ NOVO';
+  btnEl.onclick = () => {
+    if (name === 'whatsapp') {
+      novoContatoWA();
+    } else if (mainBtns[name]) {
+      openModal(name.replace('campanhas','campanha'));
+    }
+  };
+  // lazy load
+  const loaders = { leads: loadLeads, clientes: loadClientes, pipeline: loadPipeline, whatsapp: loadWhatsApp, campanhas: loadCampanhas, jornadas: loadJornadas, conteudo: loadConteudo, nps: loadNPS, insights: loadInsights, clusters: loadClusters, config: loadConfig };
+  if (loaders[name]) loaders[name]();
+}
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  try {
+    const d = await api('/dashboard');
+    if (d?.data) {
+      const { leads, clientes, pipeline, whatsapp, nps } = d.data;
+      document.getElementById('k-leads').textContent = leads?.total ?? 0;
+      document.getElementById('k-clientes').textContent = clientes?.ativos ?? 0;
+      const mrr = clientes?.mrr || 0;
+      document.getElementById('k-mrr').textContent = mrr >= 1000 ? 'R$' + (mrr/1000).toFixed(1) + 'k' : 'R$' + mrr;
+      document.getElementById('k-nps').textContent = nps?.score ?? '—';
+      const badgeLeads = document.getElementById('badge-leads');
+      if (badgeLeads) badgeLeads.textContent = leads?.porStatus?.novo || 0;
+      const badgeWa = document.getElementById('badge-wa');
+      if (badgeWa) badgeWa.textContent = whatsapp?.naoLidas || 0;
+    } else {
+      // Fallback: carregar dados individuais
+      const l = await api('/leads?limit=1');
+      if (l) document.getElementById('k-leads').textContent = l.total || 0;
+      const c = await api('/clientes?limit=1');
+      if (c) document.getElementById('k-clientes').textContent = c.total || 0;
+      document.getElementById('k-mrr').textContent = 'R$0';
+      document.getElementById('k-nps').textContent = '—';
+    }
+  } catch(e) {
+    console.log('[Dashboard] erro:', e.message);
+    document.getElementById('k-leads').textContent = '0';
+    document.getElementById('k-clientes').textContent = '0';
+    document.getElementById('k-mrr').textContent = 'R$0';
+    document.getElementById('k-nps').textContent = '—';
+  }
+}
+
+// Live feed
+const feedEvents = [
+  ['🧠', 'Lead moveu para cluster <b style="color:var(--cyan)">Alta Urgência</b>'],
+  ['💬', 'Sentimento <b style="color:var(--amber)">urgente</b> detectado no WhatsApp'],
+  ['📧', 'E-mail IA gerado para cluster Decisores'],
+  ['⚡', 'Jornada adaptou fluxo — hesitação detectada'],
+  ['🎯', 'NPS respondido — nota 9 · Promotor'],
+  ['🔔', 'Push disparo · cluster Pré-compra'],
+];
+let fi = 0;
+setInterval(() => {
+  const feed = document.getElementById('dash-feed'); if (!feed) return;
+  const [ico, txt] = feedEvents[fi++ % feedEvents.length];
+  const d = document.createElement('div'); d.className = 'act-item'; d.style.cssText = 'opacity:0;transition:opacity .3s';
+  d.innerHTML = `<span class="act-ico">${ico}</span><span class="act-txt">${txt}</span><span class="act-t">agora</span>`;
+  feed.insertBefore(d, feed.firstChild); setTimeout(() => d.style.opacity = '1', 50);
+  if (feed.children.length > 6) feed.removeChild(feed.lastChild);
+  [...feed.children].forEach((c, i) => { const t = c.querySelector('.act-t'); if (t && i > 0) t.textContent = i + 'm'; });
+}, 4000);
+
+// ── LEADS ──
+var LEADS_DATA = [];
+
+async function loadLeads() {
+  const d = await api('/leads?limit=50');
+  if (!d) return;
+  LEADS_DATA = d.data || [];
+  document.getElementById('leads-count').textContent = (d.total || 0) + ' leads encontrados';
+  const tbody = document.getElementById('leads-tbody');
+  tbody.innerHTML = '';
+  if (!LEADS_DATA.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Nenhum lead cadastrado</td></tr>'; return; }
+  const statusColors = { novo: 'b-cyan', contatado: 'b-amber', qualificado: 'b-violet', convertido: 'b-green', perdido: 'b-red' };
+  LEADS_DATA.forEach(l => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div style="font-weight:500">${l.nome_empresa}</div><div style="font-size:.7rem;color:var(--muted)">${l.cidade||''}${l.uf?' - '+l.uf:''}</div></td>
+      <td><div style="font-size:.78rem">${l.email||'—'}</div><div style="font-size:.7rem;color:var(--muted)">${l.whatsapp||''}</div></td>
+      <td><span class="badge ${statusColors[l.status]||'b-muted'}">${l.status}</span></td>
+      <td><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:${l.score_comportamento||0}%"></div></div><span style="font-size:.7rem;color:var(--muted)">${l.score_comportamento||0}</span></div></td>
+      <td><span class="badge b-muted">${l.origem}</span></td>
+      <td style="font-size:.72rem;color:var(--muted)">${new Date(l.created_at).toLocaleDateString('pt-BR')}</td>
+      <td><div class="act-btns">
+        <button class="ab" onclick="editLead('${l.id}')">✏️ Editar</button>
+        <button class="ab" style="background:rgba(168,85,247,.1);color:#c084fc" onclick="adicionarPipeline('${l.id}','${(l.nome_empresa||'').replace(/'/g,"\\'")}')">📊 Pipeline</button>
+        <button class="ab" style="background:rgba(16,185,129,.1);color:#34d399" onclick="iniciarJornadaLead('${l.id}','${l.email||''}','${l.whatsapp||''}')">🔄 Jornada</button>
+        <button class="ab del" onclick="deleteLead('${l.id}')">✕</button>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function deleteLead(id) {
+  if (!confirm('Excluir lead?')) return;
+  await api('/leads/' + id, 'DELETE');
+  toast('Lead removido'); loadLeads();
+}
+
+function editLead(id) {
+  const l = LEADS_DATA.find(x => x.id === id);
+  if (!l) { toast('Lead não encontrado', 'err'); return; }
+  document.getElementById('overlay-edit-lead')?.remove();
+  const ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+  const ov = document.createElement('div');
+  ov.id = 'overlay-edit-lead';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+  ov.innerHTML = `
+    <div style="background:var(--panel);border:1px solid var(--b2);border-radius:12px;max-width:540px;width:100%;box-shadow:0 0 60px rgba(0,212,255,.1)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--cdim)">
+        <h2 style="font-size:.95rem;font-weight:700;font-family:'Space Mono',monospace;color:var(--cyan)">✏️ EDITAR LEAD</h2>
+        <button onclick="document.getElementById('overlay-edit-lead').remove()" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;line-height:1">×</button>
+      </div>
+      <div style="padding:1.5rem;display:grid;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label class="form-label">Empresa *</label><input id="el-empresa" class="form-input" value="${(l.nome_empresa||'').replace(/"/g,'&quot;')}"></div>
+          <div><label class="form-label">Segmento</label><input id="el-segmento" class="form-input" value="${(l.segmento||'').replace(/"/g,'&quot;')}"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label class="form-label">E-mail</label><input id="el-email" class="form-input" type="email" value="${l.email||''}"></div>
+          <div><label class="form-label">WhatsApp</label><input id="el-whatsapp" class="form-input" value="${l.whatsapp||''}"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div><label class="form-label">Cidade</label><input id="el-cidade" class="form-input" value="${l.cidade||''}"></div>
+          <div><label class="form-label">UF</label><select id="el-uf" class="form-input"><option value="">—</option>${ufs.map(u=>`<option${l.uf===u?' selected':''}>${u}</option>`).join('')}</select></div>
+          <div><label class="form-label">Status</label><select id="el-status" class="form-input">
+            ${['novo','contatado','qualificado','convertido','perdido'].map(s=>`<option value="${s}"${l.status===s?' selected':''}>${s}</option>`).join('')}
+          </select></div>
+        </div>
+        <div><label class="form-label">Notas</label><textarea id="el-notas" class="form-input" rows="3" style="resize:vertical">${l.notas||''}</textarea></div>
+      </div>
+      <div style="padding:1rem 1.5rem;border-top:1px solid var(--cdim);display:flex;justify-content:flex-end;gap:.5rem">
+        <button onclick="document.getElementById('overlay-edit-lead').remove()" style="background:transparent;border:1px solid var(--cdim);color:var(--muted);border-radius:4px;padding:.6rem 1.1rem;cursor:pointer;font-family:'Space Mono',monospace;font-size:.72rem">CANCELAR</button>
+        <button onclick="salvarLead('${id}')" style="background:var(--cyan);color:#000;border:none;border-radius:4px;padding:.6rem 1.25rem;cursor:pointer;font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700">💾 SALVAR</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if(e.target===ov) ov.remove(); });
+}
+
+async function salvarLead(id) {
+  const r = await api('/leads/' + id, 'PUT', {
+    nome_empresa: document.getElementById('el-empresa').value,
+    email:        document.getElementById('el-email').value,
+    whatsapp:     document.getElementById('el-whatsapp').value,
+    cidade:       document.getElementById('el-cidade').value,
+    uf:           document.getElementById('el-uf').value,
+    segmento:     document.getElementById('el-segmento').value,
+    status:       document.getElementById('el-status').value,
+    notas:        document.getElementById('el-notas').value,
+  });
+  if (r?.ok) { toast('Lead atualizado ✓'); document.getElementById('overlay-edit-lead')?.remove(); loadLeads(); }
+  else toast('Erro ao salvar: ' + (r?.error||''), 'err');
+}
+
+async function adicionarPipeline(leadId, nome) {
+  if (!confirm('Adicionar "' + nome + '" ao Pipeline em Prospecção?')) return;
+  const r = await api('/pipeline', 'POST', { titulo: nome, lead_id: leadId, etapa: 'prospeccao', valor: 0 });
+  if (r?.ok) { toast('✓ Adicionado ao Pipeline!'); loadPipeline(); }
+  else toast('Erro: ' + (r?.error||''), 'err');
+}
+
+function iniciarJornadaLead(leadId, email, whatsapp) {
+  openModal('jornada');
+  setTimeout(() => {
+    if (document.getElementById('mjorn-email')) document.getElementById('mjorn-email').value = email;
+    if (document.getElementById('mjorn-wa'))    document.getElementById('mjorn-wa').value    = whatsapp;
+    if (document.getElementById('mjorn-lead-id')) document.getElementById('mjorn-lead-id').value = leadId;
+  }, 150);
+}
+
+// ── CLIENTES ──
+async function loadClientes() {
+  const d = await api('/clientes?limit=50');
+  if (!d) return;
+  document.getElementById('clientes-count').textContent = (d.total || 0) + ' clientes';
+  const tbody = document.getElementById('clientes-tbody');
+  tbody.innerHTML = '';
+  if (!d.data?.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Nenhum cliente</td></tr>'; return; }
+  const st = { ativo: 'b-green', inativo: 'b-muted', inadimplente: 'b-red', cancelado: 'b-red' };
+  d.data.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div style="font-weight:500">${c.nome_empresa}</div><div style="font-size:.7rem;color:var(--muted)">${c.cnpj||''}</div></td>
+      <td><div style="font-size:.78rem">${c.email||'—'}</div></td>
+      <td><span class="badge b-muted">${c.plano||'—'}</span></td>
+      <td style="font-family:'Space Mono',monospace;font-size:.8rem;color:var(--green)">R$${parseFloat(c.valor_mensal||0).toFixed(0)}</td>
+      <td><span class="badge ${st[c.status]||'b-muted'}">${c.status}</span></td>
+      <td style="font-size:.72rem;color:var(--muted)">${new Date(c.data_inicio).toLocaleDateString('pt-BR')}</td>
+      <td><div class="act-btns"><button class="ab">Editar</button><button class="ab del">Excluir</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── PIPELINE (Kanban) ──
+async function loadPipeline() {
+  const d = await api('/pipeline');
+  if (!d) return;
+  const etapas = [
+    { key: 'prospeccao',   label: 'Prospecção',   color: 'var(--cyan)' },
+    { key: 'qualificacao', label: 'Qualificação',  color: 'var(--violet)' },
+    { key: 'proposta',     label: 'Proposta',      color: 'var(--amber)' },
+    { key: 'negociacao',   label: 'Negociação',    color: 'var(--orange,#f97316)' },
+    { key: 'fechado_ganho',label: 'Fechado ✓',     color: 'var(--green)' },
+  ];
+  const kanban = document.getElementById('kanban');
+  kanban.innerHTML = '';
+  etapas.forEach((e, ei) => {
+    const cards = (d.data || []).filter(p => p.etapa === e.key);
+    const proxEtapa = etapas[ei + 1]?.key || null;
+    const col = document.createElement('div');
+    col.style.cssText = 'background:var(--panel);border:1px solid var(--cdim);border-radius:7px;overflow:hidden;min-height:400px;display:flex;flex-direction:column';
+    col.innerHTML = `
+      <div style="padding:.75rem 1rem;border-bottom:1px solid var(--cdim);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <div style="width:8px;height:8px;border-radius:50%;background:${e.color}"></div>
+          <span style="font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted);letter-spacing:.07em">${e.label}</span>
+        </div>
+        <span style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted)">${cards.length}</span>
+      </div>
+      <div id="kanban-col-${e.key}" style="padding:.65rem;display:flex;flex-direction:column;gap:.5rem;flex:1">
+        ${cards.map(p => `
+          <div style="background:rgba(0,0,0,.2);border:1px solid var(--cdim);border-radius:5px;padding:.75rem;transition:border-color .2s" onmouseover="this.style.borderColor='var(--b2)'" onmouseout="this.style.borderColor='var(--cdim)'">
+            <div style="font-size:.82rem;font-weight:600;margin-bottom:.3rem;color:var(--ct)">${p.titulo}</div>
+            <div style="font-family:'Space Mono',monospace;font-size:.7rem;color:var(--green);margin-bottom:.5rem">R$${parseFloat(p.valor||0).toLocaleString('pt-BR')}</div>
+            <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+              ${proxEtapa ? `<button onclick="moverPipeline('${p.id}','${proxEtapa}')" style="font-size:.6rem;padding:3px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--cyan);border-radius:3px;cursor:pointer;font-family:'Space Mono',monospace">→ Avançar</button>` : ''}
+              <button onclick="removerPipeline('${p.id}')" style="font-size:.6rem;padding:3px 8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;border-radius:3px;cursor:pointer;font-family:'Space Mono',monospace">✕</button>
+            </div>
+          </div>`).join('')}
+        ${cards.length === 0 ? '<div style="text-align:center;padding:2rem 1rem;color:var(--dim);font-size:.72rem;font-family:\'Space Mono\',monospace">Vazio</div>' : ''}
+      </div>`;
+    kanban.appendChild(col);
+  });
+}
+
+async function moverPipeline(id, etapa) {
+  if (etapa === 'fechado_ganho') {
+    if (!confirm('Fechar como GANHO? O lead será convertido automaticamente em cliente e a jornada de retenção será iniciada.')) return;
+  }
+  if (etapa === 'fechado_perdido') {
+    if (!confirm('Fechar como PERDIDO? A jornada de recuperação será iniciada automaticamente.')) return;
+  }
+  const r = await api('/pipeline/' + id + '/mover', 'PUT', { etapa });
+  if (r?.ok) {
+    if (etapa === 'fechado_ganho') {
+      toast('Parabéns! Lead convertido em cliente ✓');
+      setTimeout(() => { loadPipeline(); loadLeads(); }, 500);
+    } else if (etapa === 'fechado_perdido') {
+      toast('Pipeline fechado. Jornada de recuperação iniciada.');
+      loadPipeline();
+    } else {
+      toast('Movido para ' + etapa + ' ✓');
+      loadPipeline();
+    }
+  } else {
+    toast('Erro ao mover: ' + (r?.error || ''), 'err');
+  }
+}
+
+async function removerPipeline(id) {
+  if (!confirm('Remover do pipeline?')) return;
+  await api('/pipeline/' + id, 'DELETE');
+  toast('Removido'); loadPipeline();
+}
+
+// ── WHATSAPP ──
+let waActiveContact = null;
+// ── WHATSAPP PRO ──
+let waContatos = [];
+let waTabAtual = 'todos';
+let waPollingTimer = null;
+let waUltimaMsg = null;
+const waRespostas = [
+  { atalho: '/ola', texto: 'Ola! Como posso ajudar voce hoje?' },
+  { atalho: '/aguarde', texto: 'Aguarde um momento, por favor.' },
+  { atalho: '/verificar', texto: 'Vou verificar isso para voce!' },
+  { atalho: '/obrigado', texto: 'Obrigado pelo contato!' },
+  { atalho: '/cnpj', texto: 'Poderia me informar seu CNPJ ou nome da empresa?' },
+];
+
+async function loadWhatsApp() {
+  try {
+    const d = await api('/whatsapp/contatos?limit=50');
+    waContatos = (d?.data || []).map(function(c) {
+      return Object.assign({ status_atendimento: 'aguardando', nao_lidas: 0, ultima_msg_texto: '' }, c);
+    });
+    renderWAList();
+    atualizarWAIndicadores();
+  } catch(e) {
+    const list = document.getElementById('wa-contacts-list');
+    if (list) list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted)">Erro ao carregar contatos</div>';
+  }
+}
+
+function atualizarWAIndicadores() {
+  const s = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+  s('ind-total', waContatos.length);
+  s('ind-aguardando', waContatos.filter(function(c){ return !c.status_atendimento || c.status_atendimento === 'aguardando'; }).length);
+  s('ind-atendendo', waContatos.filter(function(c){ return c.status_atendimento === 'atendendo'; }).length);
+  s('ind-finalizados', waContatos.filter(function(c){ return c.status_atendimento === 'finalizado'; }).length);
+}
+
+function switchWaTab(tab) {
+  waTabAtual = tab;
+  ['todos','aguardando','atendendo','finalizado'].forEach(function(t) {
+    var btn = document.getElementById('watab-' + t);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  renderWAList();
+}
+
+function filtrarContatosWA(busca) {
+  var lista = waContatos.filter(function(c) {
+    return (c.nome||'').toLowerCase().includes(busca.toLowerCase()) || (c.telefone||'').includes(busca);
+  });
+  renderWAList(lista);
+}
+
+function renderWAList(lista) {
+  lista = lista || waContatos;
+  if (waTabAtual !== 'todos') {
+    lista = lista.filter(function(c) {
+      var s = c.status_atendimento || 'aguardando';
+      if (waTabAtual === 'aguardando') return s === 'aguardando';
+      if (waTabAtual === 'atendendo') return s === 'atendendo';
+      if (waTabAtual === 'finalizado') return s === 'finalizado';
+      return true;
+    });
+  }
+  var list = document.getElementById('wa-contacts-list');
+  if (!list) return;
+  if (!lista.length) {
+    list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);font-size:.78rem">Nenhuma conversa</div>';
+    return;
+  }
+  list.innerHTML = '';
+  lista.forEach(function(c) {
+    var div = document.createElement('div');
+    div.className = 'wa-contact-pro' + (waActiveContact && waActiveContact.id === c.id ? ' active' : '');
+    var init = (c.nome || c.telefone || '?').substring(0, 2).toUpperCase();
+    var hora = c.ultima_msg ? new Date(c.ultima_msg).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '';
+    var dotColor = c.status_atendimento === 'atendendo' ? '#00d4ff' : c.status_atendimento === 'finalizado' ? '#10b981' : '#f59e0b';
+    var badge = c.nao_lidas > 0 ? '<span style="background:var(--cyan);color:#0a0f1e;border-radius:10px;font-size:.6rem;font-weight:700;padding:1px 5px">' + c.nao_lidas + '</span>' : '';
+    div.innerHTML =
+      '<div class="wa-av-pro">' + init + '<div class="wa-sdot" style="background:' + dotColor + '"></div></div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:.82rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.nome || c.telefone) + '</div>' +
+        '<div style="font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + (c.ultima_msg_texto || 'Sem mensagens') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;flex-shrink:0">' +
+        '<span style="font-size:.62rem;color:var(--muted)">' + hora + '</span>' + badge +
+      '</div>';
+    div.onclick = function() { abrirChatWA(c, div); };
+    list.appendChild(div);
+  });
+}
+
+async function abrirChatWA(contato, el) {
+  waActiveContact = contato;
+  if (waPollingTimer) { clearInterval(waPollingTimer); waPollingTimer = null; }
+  document.querySelectorAll('.wa-contact-pro').forEach(function(c) { c.classList.remove('active'); });
+  if (el) el.classList.add('active');
+
+  var area = document.getElementById('wa-chat-area');
+  if (!area) return;
+  var init = (contato.nome || contato.telefone || '?').substring(0, 2).toUpperCase();
+  var status = contato.status_atendimento || 'aguardando';
+
+  area.innerHTML =
+    '<div class="wa-chat-head-pro">' +
+      '<div class="wa-av-pro" style="width:36px;height:36px;font-size:.75rem">' + init + '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-weight:600;font-size:.88rem">' + (contato.nome || contato.telefone) + '</div>' +
+        '<div style="font-size:.68rem;color:var(--cyan)">● ' + status + ' · ' + (contato.telefone || '') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:.35rem">' +
+        '<button class="wa-tool" onclick="assumirAtendimentoWA()">👤 Assumir</button>' +
+        '<button class="wa-tool" onclick="finalizarAtendimentoWA()" style="color:var(--green);border-color:rgba(29,158,117,.3)">✓ Finalizar</button>' +
+        '<button class="wa-tool" onclick="adicionarNotaWA()">📝 Nota</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="wa-chat-body-pro" id="chat-body"></div>' +
+    '<div id="resp-panel" style="display:none;padding:.4rem .75rem;border-top:1px solid var(--cdim);background:var(--bg2);flex-wrap:wrap;gap:.3rem"></div>' +
+    '<div class="wa-input-pro">' +
+      '<div class="wa-tools-bar">' +
+        '<button class="wa-tool" onclick="toggleRespostasWA()">⚡ Rápidas</button>' +
+        '<button class="wa-tool" onclick="gerarRespostaWA()">✨ IA</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:.5rem;align-items:flex-end">' +
+        '<textarea class="wa-textarea" id="wa-msg" placeholder="Digite... (/ para respostas rápidas)" rows="1" ' +
+          'oninput="autoResizeWA(this);checkRespostasWA(this.value)" ' +
+          'onkeydown="if(event.key===String.fromCharCode(13)&&!event.shiftKey){event.preventDefault();enviarMsgWAAtivo()}"></textarea>' +
+        '<button class="wa-send-btn" onclick="enviarMsgWAAtivo()">ENVIAR</button>' +
+      '</div>' +
+    '</div>';
+
+  if (contato.nao_lidas > 0) {
+    api('/whatsapp/contatos/' + contato.id + '/lido', 'POST').catch(function(){});
+    contato.nao_lidas = 0;
+    var idx = waContatos.findIndex(function(c){ return c.id === contato.id; });
+    if (idx !== -1) waContatos[idx].nao_lidas = 0;
+    renderWAList();
+  }
+
+  await carregarMensagensWA(contato.id);
+}
+
+async function openChat(contato) { await abrirChatWA(contato, null); }
+
+async function carregarMensagensWA(cid) {
+  var msgs = await api('/whatsapp/contatos/' + cid + '/mensagens?limit=50');
+  var body = document.getElementById('chat-body');
+  if (!body) return;
+  var lista = msgs?.data || [];
+  renderMensagensWA(lista, body);
+  waUltimaMsg = lista.length ? lista[lista.length-1].id : null;
+  waPollingTimer = setInterval(function(){ pollMsgsWA(cid); }, 5000);
+}
+
+function renderMensagensWA(lista, body) {
+  body.innerHTML = '';
+  if (!lista.length) {
+    body.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.78rem;padding:3rem">Nenhuma mensagem ainda</div>';
+    return;
+  }
+  lista.forEach(function(m) {
+    var div = document.createElement('div');
+    div.className = 'msg-row ' + (m.direcao === 'enviada' ? 'sent' : 'recv');
+    div.dataset.id = m.id;
+    var hora = new Date(m.created_at).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    div.innerHTML =
+      '<div class="msg-bub">' + (m.conteudo || '') + '</div>' +
+      '<div class="msg-meta">' + hora + (m.direcao === 'enviada' ? ' ✓✓' : '') + '</div>';
+    body.appendChild(div);
+  });
+  body.scrollTop = body.scrollHeight;
+}
+
+async function pollMsgsWA(cid) {
+  if (!waActiveContact || waActiveContact.id !== cid) { clearInterval(waPollingTimer); return; }
+  var body = document.getElementById('chat-body');
+  if (!body) { clearInterval(waPollingTimer); return; }
+  var d = await api('/whatsapp/contatos/' + cid + '/mensagens?limit=20');
+  var todas = d?.data || [];
+  var novas = todas.filter(function(m){ return !document.querySelector('[data-id="' + m.id + '"]'); });
+  if (!novas.length) return;
+  novas.forEach(function(m) {
+    var div = document.createElement('div');
+    div.className = 'msg-row ' + (m.direcao === 'enviada' ? 'sent' : 'recv');
+    div.dataset.id = m.id;
+    var hora = new Date(m.created_at).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    div.innerHTML = '<div class="msg-bub">' + (m.conteudo||'') + '</div><div class="msg-meta">' + hora + '</div>';
+    body.appendChild(div);
+  });
+  body.scrollTop = body.scrollHeight;
+  loadWhatsApp();
+}
+
+function enviarMsgWAAtivo() {
+  if (waActiveContact) sendWAMsg(waActiveContact.id, waActiveContact.telefone);
+}
+
+function autoResizeWA(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+
+function checkRespostasWA(val) {
+  var panel = document.getElementById('resp-panel');
+  if (!panel) return;
+  if (!val.startsWith('/')) { panel.style.display = 'none'; return; }
+  var filtrado = val === '/' ? waRespostas : waRespostas.filter(function(r){ return r.atalho.includes(val); });
+  if (!filtrado.length) { panel.style.display = 'none'; return; }
+  panel.style.display = 'flex';
+  panel.innerHTML = filtrado.map(function(r, i) {
+    return '<button class="resp-chip" onclick="usarRespostaWA(' + waRespostas.indexOf(r) + ')">' + r.atalho + ' — ' + r.texto.substring(0,40) + '</button>';
+  }).join('');
+}
+
+function toggleRespostasWA() {
+  var panel = document.getElementById('resp-panel');
+  if (!panel) return;
+  if (panel.style.display === 'none' || !panel.style.display) {
+    panel.style.display = 'flex';
+    panel.innerHTML = waRespostas.map(function(r, i) {
+      return '<button class="resp-chip" onclick="usarRespostaWA(' + i + ')">' + r.atalho + ' — ' + r.texto.substring(0,45) + '</button>';
+    }).join('');
+  } else { panel.style.display = 'none'; }
+}
+
+function usarRespostaWA(i) {
+  var input = document.getElementById('wa-msg');
+  if (input) { input.value = waRespostas[i].texto; input.focus(); autoResizeWA(input); }
+  var panel = document.getElementById('resp-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+async function finalizarAtendimentoWA() {
+  if (!waActiveContact) return;
+  if (!confirm('Finalizar atendimento?')) return;
+  await api('/whatsapp/contatos/' + waActiveContact.id, 'PUT', { status_atendimento: 'finalizado' }).catch(function(){});
+  waActiveContact.status_atendimento = 'finalizado';
+  var idx = waContatos.findIndex(function(c){ return c.id === waActiveContact.id; });
+  if (idx !== -1) waContatos[idx].status_atendimento = 'finalizado';
+  atualizarWAIndicadores();
+  renderWAList();
+  toast('Atendimento finalizado ✓');
+}
+
+async function assumirAtendimentoWA() {
+  if (!waActiveContact) return;
+  await api('/whatsapp/contatos/' + waActiveContact.id, 'PUT', { status_atendimento: 'atendendo' }).catch(function(){});
+  waActiveContact.status_atendimento = 'atendendo';
+  var idx = waContatos.findIndex(function(c){ return c.id === waActiveContact.id; });
+  if (idx !== -1) waContatos[idx].status_atendimento = 'atendendo';
+  atualizarWAIndicadores();
+  renderWAList();
+  toast('Voce assumiu este atendimento. ARIA pausada.');
+}
+
+function adicionarNotaWA() {
+  var nota = prompt('Nota interna (nao enviada ao cliente):');
+  if (!nota) return;
+  var body = document.getElementById('chat-body');
+  if (body) {
+    var div = document.createElement('div');
+    div.style.cssText = 'text-align:center;margin:.3rem 0';
+    div.innerHTML = '<span style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:3px 10px;font-size:.7rem;color:var(--amber)">📝 ' + nota + '</span>';
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+}
+
+async function gerarRespostaWA() {
+  if (!waActiveContact) return;
+  var r = await api('/whatsapp/ia-resposta', 'POST', { contato_id: waActiveContact.id });
+  if (!r?.data?.resposta) return toast('Erro ao gerar resposta', 'err');
+  var input = document.getElementById('wa-msg');
+  if (input) { input.value = r.data.resposta; autoResizeWA(input); input.focus(); }
+  toast('Resposta IA gerada ✓');
+}
+
+
+async function novoContatoWA() {
+  const nome = prompt('Nome do contato:');
+  if (!nome) return;
+  const telefone = prompt('Telefone (com DDD, ex: 11999999999):');
+  if (!telefone) return;
+  const r = await api('/whatsapp/contatos', 'POST', { telefone, nome });
+  if (r?.data?.id) {
+    toast('Contato adicionado ✓');
+    loadWhatsApp();
+  } else {
+    toast('Erro ao adicionar: ' + (r?.error || 'desconhecido'), 'err');
+  }
+}
+
+async function sendWAMsg(cid, tel) {
+  const input = document.getElementById('wa-msg');
+  const msg = input?.value?.trim();
+  if (!msg) return;
+  input.value = '';
+  const r = await api('/whatsapp/enviar', 'POST', { contato_id: cid, telefone: tel, mensagem: msg });
+  if (r?.ok) { toast('Mensagem enviada'); openChat(waActiveContact); }
+  else toast('Erro ao enviar: ' + (r?.error || 'desconhecido'), 'err');
+}
+
+async function analisarSentimento(cid) {
+  const r = await api('/whatsapp/sentimento', 'POST', { contato_id: cid });
+  if (!r?.data) return;
+  const d = r.data;
+  const area = document.getElementById('sent-analysis');
+  if (!area) return;
+  area.innerHTML = `
+    <div class="sent-inline">
+      <div class="si-head">
+        <span class="si-title">// ANÁLISE NEURAL</span>
+        <span class="si-live"><span class="si-dot"></span>${d.perfil?.toUpperCase()||'ANALISANDO'} · ${d.confianca_modelo||0}% conf.</span>
+      </div>
+      <div class="si-bars">
+        ${[['Interesse',d.interesse,'var(--cyan)'],['Urgência',d.urgencia,'var(--amber)'],['Hesitação',d.hesitacao,'var(--violet)'],['Confiança',d.confianca,'var(--green)']].map(([l,v,c]) => `
+          <div class="si-bar-wrap">
+            <span class="si-label">${l}</span>
+            <div class="si-track"><div class="si-fill" style="height:${v||0}%;background:${c}"></div></div>
+            <span class="si-pct" style="color:${c}">${v||0}%</span>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:.65rem;font-family:'Space Mono',monospace;font-size:.65rem;color:var(--amber)">→ ${d.acao_recomendada||'Aguardando mais dados'}</div>
+    </div>`;
+}
+
+async function gerarResposta(cid) {
+  const r = await api('/whatsapp/ia-resposta', 'POST', { contato_id: cid });
+  if (!r?.data?.resposta) return toast('Erro ao gerar resposta', 'err');
+  const input = document.getElementById('wa-msg');
+  if (input) input.value = r.data.resposta;
+  toast('Resposta IA gerada ✓');
+}
+
+// ── CAMPANHAS ──
+async function loadCampanhas() {
+  const d = await api('/campanhas');
+  if (!d) return;
+  document.getElementById('camp-count').textContent = (d.data?.length||0) + ' campanhas';
+  const tbody = document.getElementById('camp-tbody');
+  tbody.innerHTML = '';
+  if (!d.data?.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Nenhuma campanha</td></tr>'; return; }
+  const sc = { rascunho:'b-muted', agendada:'b-amber', enviando:'b-cyan', concluida:'b-green', cancelada:'b-red' };
+  const tc = { email:'📧', whatsapp:'💬', sms:'📱', multi:'🚀' };
+  d.data.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:500">${c.nome}</td>
+      <td>${tc[c.tipo]||'📋'} <span style="font-size:.75rem">${c.tipo}</span></td>
+      <td><span class="badge ${sc[c.status]||'b-muted'}">${c.status}</span></td>
+      <td style="font-family:'Space Mono',monospace;font-size:.78rem">${c.total_enviados||0}</td>
+      <td style="font-size:.72rem;color:var(--muted)">${new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
+      <td><div class="act-btns">
+        ${c.status==='rascunho'?`<button class="ab" onclick="dispararCampanha('${c.id}')">▶ Disparar</button>`:''} 
+        <button class="ab del" onclick="deleteCampanha('${c.id}')">Excluir</button>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function dispararCampanha(id) {
+  if (!confirm('Disparar campanha agora?')) return;
+  const r = await api('/campanhas/' + id + '/disparar', 'POST');
+  if (r?.ok) { toast('Campanha em disparo ✓'); loadCampanhas(); }
+  else toast('Erro: ' + (r?.error||'desconhecido'), 'err');
+}
+async function deleteCampanha(id) {
+  if (!confirm('Excluir campanha?')) return;
+  await api('/campanhas/' + id, 'DELETE');
+  toast('Campanha excluída'); loadCampanhas();
+}
+
+// ── JORNADAS ──
+async function loadJornadas() {
+  const d = await api('/jornadas');
+  if (!d) return;
+  const grid = document.getElementById('jorn-grid');
+  grid.innerHTML = '';
+  if (!d.data?.length) { grid.innerHTML = '<div class="empty" style="grid-column:span 2"><div class="empty-ico">🔄</div><div class="empty-txt">Nenhuma jornada ativa</div></div>'; return; }
+  const sc = { ativa:'b-green', pausada:'b-amber', concluida:'b-cyan', cancelada:'b-red' };
+  d.data.forEach(j => {
+    const passos = j.passos?.length || 1;
+    const prog = Math.round((j.dia_atual / passos) * 100);
+    const div = document.createElement('div');
+    div.className = 'jorn-card';
+    div.innerHTML = `
+      <div class="jc-head">
+        <div><div class="jc-name">${j.nome||j.tipo}</div><div class="jc-tipo">${j.tipo}</div></div>
+        <span class="badge ${sc[j.status]||'b-muted'}">${j.status}</span>
+      </div>
+      <div class="jc-prog">
+        <div class="jcp-label"><span>Progresso</span><span>Dia ${j.dia_atual}/${passos}</span></div>
+        <div class="jcp-track"><div class="jcp-fill" style="width:${prog}%"></div></div>
+      </div>
+      <div class="jc-foot">
+        <div style="font-size:.75rem;color:var(--muted)">${j.email||j.whatsapp||'—'}</div>
+        <div class="act-btns">
+          ${j.status==='ativa'?`<button class="ab" onclick="pausarJornada('${j.id}')">⏸</button>`:''}
+          ${j.status==='pausada'?`<button class="ab" onclick="retomarJornada('${j.id}')">▶</button>`:''}
+          <button class="ab del" onclick="cancelarJornada('${j.id}')">✕</button>
+        </div>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+async function pausarJornada(id) { await api('/jornadas/'+id+'/pausar','POST'); toast('Jornada pausada'); loadJornadas(); }
+async function retomarJornada(id) { await api('/jornadas/'+id+'/retomar','POST'); toast('Jornada retomada'); loadJornadas(); }
+async function cancelarJornada(id) { if(!confirm('Cancelar jornada?'))return; await api('/jornadas/'+id+'/cancelar','POST'); toast('Jornada cancelada'); loadJornadas(); }
+
+// ── CONTEÚDO ──
+async function loadConteudo() {
+  const d = await api('/conteudo?limit=12');
+  if (!d) return;
+  const grid = document.getElementById('content-grid');
+  grid.innerHTML = '';
+  if (!d.data?.length) { grid.innerHTML = '<div class="empty" style="grid-column:span 3"><div class="empty-ico">✍️</div><div class="empty-txt">Nenhum conteúdo gerado ainda</div></div>'; return; }
+  const plat = { instagram:'📸', linkedin:'💼', blog:'📝', email:'📧', twitter:'🐦', facebook:'📘', tiktok:'🎵' };
+  const sc = { rascunho:'b-muted', agendado:'b-amber', publicado:'b-green', arquivado:'b-red' };
+  d.data.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'cg-card';
+    div.innerHTML = `
+      <div class="cg-plat">${plat[c.plataforma]||'📄'} ${c.plataforma.toUpperCase()}</div>
+      <div class="cg-title">${c.titulo||'Sem título'}</div>
+      <div class="cg-body">${c.corpo}</div>
+      <div class="cg-foot"><span class="badge ${sc[c.status]||'b-muted'}">${c.status}</span><div class="act-btns"><button class="ab del" onclick="deleteConteudo('${c.id}')">✕</button></div></div>`;
+    grid.appendChild(div);
+  });
+}
+async function deleteConteudo(id) { await api('/conteudo/'+id,'DELETE'); toast('Removido'); loadConteudo(); }
+
+// ── NPS ──
+async function loadNPS() {
+  const d = await api('/nps');
+  if (!d) return;
+  const tbody = document.getElementById('nps-tbody');
+  tbody.innerHTML = '';
+  if (!d.data?.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Nenhuma campanha NPS</td></tr>'; return; }
+  let totalProm=0,totalNeut=0,totalDetr=0;
+  d.data.forEach(n => {
+    const score = parseFloat(n.nps_score||0);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:500">${n.nome}</td>
+      <td style="font-family:'Space Mono',monospace">${n.total_respostas||0}</td>
+      <td><span style="font-family:'Space Mono',monospace;font-weight:700;color:${score>=50?'var(--green)':score>=0?'var(--amber)':'var(--red)'}">${score}</span></td>
+      <td><span class="badge b-green">${n.status}</span></td>
+      <td><div class="act-btns"><button class="ab" onclick="loadNPSDash('${n.id}')">Ver</button><button class="ab" onclick="enviarNPS('${n.id}')">Enviar</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+async function enviarNPS(id) {
+  const r = await api('/nps/'+id+'/enviar','POST',{canal:'email'});
+  if(r?.ok) toast('NPS enviado para '+r.data.enviados+' clientes ✓');
+  else toast('Erro ao enviar NPS','err');
+}
+async function loadNPSDash(id) {
+  const r = await api('/nps/'+id+'/dashboard');
+  if(!r?.data) return;
+  const d = r.data;
+  document.getElementById('nps-score-val').textContent = d.nps_score||0;
+  document.getElementById('nps-promotores').textContent = d.promotores||0;
+  document.getElementById('nps-neutros').textContent = d.neutros||0;
+  document.getElementById('nps-detratores').textContent = d.detratores||0;
+}
+
+// ── INSIGHTS ──
+async function loadInsights() {
+  const d = await api('/insights');
+  if (!d?.data) return;
+  document.getElementById('ins-conv').textContent = (d.data.txConversao||0) + '%';
+  document.getElementById('ins-orig').textContent = d.data.melhorOrigem||'—';
+  document.getElementById('ins-score').textContent = Math.round(d.data.scoreLeads||0);
+  document.getElementById('ins-nps').textContent = (d.data.npsMediaGeral||0).toFixed(1);
+}
+
+async function askInsight() {
+  const q = document.getElementById('insight-q')?.value?.trim();
+  if (!q) return;
+  const resp = document.getElementById('insight-resp');
+  const txt = document.getElementById('insight-txt');
+  resp.style.display = 'block';
+  txt.textContent = 'Analisando...';
+  const r = await api('/insights/ia','POST',{pergunta:q});
+  txt.textContent = r?.data?.resposta || 'Sem resposta';
+}
+
+// ── CONFIG ──
+async function loadConfig() {
+  const d = await api('/tenant');
+  if (!d?.data) return;
+  document.getElementById('cfg-nome').value = d.data.nome||'';
+  document.getElementById('cfg-cor').value = d.data.cor_primaria||'#00d4ff';
+  document.getElementById('cfg-wphone').value = d.data.whatsapp_phone_id||'';
+  // Email config
+  if (document.getElementById('cfg-email-from')) {
+    document.getElementById('cfg-email-from').value = d.data.email_remetente||'';
+    document.getElementById('cfg-email-site').value = d.data.config?.email_site||'';
+    document.getElementById('cfg-email-instagram').value = d.data.config?.email_instagram||'';
+    document.getElementById('cfg-email-rodape').value = d.data.config?.email_rodape||'';
+  }
+  document.getElementById('cfg-wwaba').value = d.data.whatsapp_waba_id||'';
+  const users = await api('/auth/usuarios');
+  const ul = document.getElementById('users-list');
+  ul.innerHTML = '';
+  (users?.data||[]).forEach(u => {
+    const div = document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;background:rgba(0,0,0,.2);border:1px solid var(--cdim);border-radius:4px';
+    div.innerHTML=`
+      <div style="flex:1">
+        <div style="font-size:.82rem;font-weight:600;color:var(--ct)">${u.nome}</div>
+        <div style="font-size:.7rem;color:var(--cm);font-family:'Space Mono',monospace">${u.email}</div>
+      </div>
+      <span class="badge b-muted">${u.papel}</span>
+      <button onclick="abrirResetSenha('${u.id}','${u.nome.replace(/'/g,"\\'")}','${u.email}')"
+        style="background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);color:#c084fc;border-radius:4px;padding:4px 10px;font-size:.65rem;cursor:pointer;font-family:'Space Mono',monospace;white-space:nowrap">
+        🔑 SENHA
+      </button>`;
+    ul.appendChild(div);
+  });
+  // Carregar API Keys
+  const keys = await api('/tenant/api-keys');
+  const kl = document.getElementById('apikeys-list');
+  if (kl) {
+    kl.innerHTML = '';
+    if (!keys?.data?.length) {
+      kl.innerHTML = '<div style="font-size:.75rem;color:var(--cm);font-family:\'Space Mono\',monospace;padding:.5rem 0">Nenhuma API Key gerada.</div>';
+    } else {
+      (keys.data||[]).forEach(k => {
+        const div = document.createElement('div');
+        div.style.cssText='display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;background:rgba(0,0,0,.3);border:1px solid rgba(0,212,255,.12);border-radius:6px';
+        div.innerHTML=`
+          <div style="flex:1">
+            <div style="font-size:.8rem;font-weight:600;color:var(--ct)">${k.nome}</div>
+            <div style="font-size:.68rem;color:var(--cm);font-family:'Space Mono',monospace;margin-top:2px">sk_live_••••••••••••••••</div>
+          </div>
+          <span class="badge ${k.ativo?'b-green':'b-muted'}">${k.ativo?'ATIVA':'REVOGADA'}</span>
+          ${k.ativo ? `<button onclick="revogarKey('${k.id}')" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:4px;padding:4px 10px;font-size:.65rem;cursor:pointer;font-family:'Space Mono',monospace">REVOGAR</button>` : ''}`;
+        kl.appendChild(div);
+      });
+    }
+  }
+}
+
+async function revogarKey(id) {
+  if (!confirm('Revogar esta API Key? Integrações deixarão de funcionar.')) return;
+  const r = await api('/tenant/api-keys/' + id, 'DELETE');
+  if (r?.ok) { toast('API Key revogada'); loadConfig(); } else toast('Erro ao revogar','err');
+}
+
+function abrirResetSenha(userId, nome, email) {
+  // Criar overlay de reset de senha
+  const ov = document.createElement('div');
+  ov.id = 'overlay-reset-senha';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML = `
+    <div style="background:#0a1828;border:1px solid rgba(168,85,247,.35);border-radius:12px;padding:32px;max-width:420px;width:100%;box-shadow:0 0 60px rgba(168,85,247,.1)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:1.3rem">🔑</span>
+        <h2 style="font-family:'Space Mono',monospace;font-size:.95rem;color:#c084fc;letter-spacing:.05em">REDEFINIR SENHA</h2>
+      </div>
+      <p style="font-size:.8rem;color:#4d7a9e;margin-bottom:20px;font-family:'Space Mono',monospace">${nome} · ${email}</p>
+      <div style="margin-bottom:14px">
+        <label style="font-family:'Space Mono',monospace;font-size:.65rem;color:#4d7a9e;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px">Nova senha *</label>
+        <input id="rs-nova" type="password" placeholder="Mínimo 6 caracteres"
+          style="width:100%;background:rgba(0,0,0,.4);border:1px solid #122338;border-radius:4px;padding:.75rem 1rem;color:#dceeff;font-size:.9rem;font-family:'Space Grotesk',sans-serif;outline:none">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-family:'Space Mono',monospace;font-size:.65rem;color:#4d7a9e;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px">Confirmar senha *</label>
+        <input id="rs-conf" type="password" placeholder="Repita a senha"
+          style="width:100%;background:rgba(0,0,0,.4);border:1px solid #122338;border-radius:4px;padding:.75rem 1rem;color:#dceeff;font-size:.9rem;font-family:'Space Grotesk',sans-serif;outline:none">
+      </div>
+      <div id="rs-err" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:4px;padding:.6rem .9rem;font-size:.75rem;color:#fca5a5;font-family:'Space Mono',monospace;display:none;margin-bottom:14px"></div>
+      <div style="display:flex;gap:10px">
+        <button id="rs-btn" onclick="confirmarResetSenha('${userId}')"
+          style="flex:1;background:#a855f7;color:#fff;border:none;border-radius:6px;padding:12px;font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;cursor:pointer;letter-spacing:.04em">
+          REDEFINIR SENHA →
+        </button>
+        <button onclick="document.getElementById('overlay-reset-senha').remove()"
+          style="background:transparent;border:1px solid rgba(255,255,255,.1);color:#4d7a9e;border-radius:6px;padding:12px 16px;font-family:'Space Mono',monospace;font-size:.75rem;cursor:pointer">
+          CANCELAR
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  setTimeout(() => document.getElementById('rs-nova')?.focus(), 100);
+}
+
+async function confirmarResetSenha(userId) {
+  const nova = document.getElementById('rs-nova').value;
+  const conf = document.getElementById('rs-conf').value;
+  const errEl = document.getElementById('rs-err');
+  const btn = document.getElementById('rs-btn');
+
+  errEl.style.display = 'none';
+  if (!nova || nova.length < 6) { errEl.textContent = 'Senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
+  if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
+
+  btn.textContent = 'SALVANDO...'; btn.disabled = true;
+  const r = await api('/auth/usuarios/' + userId + '/senha', 'PUT', { novaSenha: nova });
+  if (r?.ok) {
+    toast('✓ Senha redefinida com sucesso!');
+    document.getElementById('overlay-reset-senha')?.remove();
+  } else {
+    errEl.textContent = r?.error || 'Erro ao redefinir senha';
+    errEl.style.display = 'block';
+    btn.textContent = 'REDEFINIR SENHA →'; btn.disabled = false;
+  }
+}
+
+async function saveConfig() {
+  const r = await api('/tenant','PUT',{nome:document.getElementById('cfg-nome').value,cor_primaria:document.getElementById('cfg-cor').value});
+  if(r?.ok) toast('Configurações salvas ✓'); else toast('Erro ao salvar','err');
+}
+
+async function saveWhatsApp() {
+  const r = await api('/whatsapp/configurar','POST',{phone_id:document.getElementById('cfg-wphone').value,token:document.getElementById('cfg-wtoken').value,waba_id:document.getElementById('cfg-wwaba').value});
+  if(r?.ok) toast('WhatsApp configurado ✓'); else toast('Erro: '+(r?.error||'desconhecido'),'err');
+}
+
+// ── MODAL ──
+const modalDefs = {
+  lead: {
+    title: 'Novo Lead',
+    body: `<div class="form-row"><div class="form-group"><label class="form-label">Empresa *</label><input id="m-empresa" class="form-input" placeholder="Nome da empresa"></div><div class="form-group"><label class="form-label">Segmento</label><input id="m-segmento" class="form-input" placeholder="Ex: SaaS"></div></div><div class="form-row"><div class="form-group"><label class="form-label">E-mail</label><input id="m-email" class="form-input" type="email" placeholder="email@empresa.com"></div><div class="form-group"><label class="form-label">WhatsApp</label><input id="m-whatsapp" class="form-input" placeholder="(79) 99999-0000"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Cidade</label><input id="m-cidade" class="form-input"></div><div class="form-group"><label class="form-label">UF</label><select id="m-uf" class="form-input"><option value="">—</option>${['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(u=>`<option>${u}</option>`).join('')}</select></div></div><div class="form-group"><label class="form-label">Origem</label><select id="m-origem" class="form-input"><option value="manual">Manual</option><option value="site">Site</option><option value="indicacao">Indicação</option><option value="api">API</option><option value="whatsapp">WhatsApp</option></select></div><div class="form-group"><label class="form-label">Notas</label><textarea id="m-notas" class="form-input" rows="2" style="resize:none"></textarea></div>`,
+    confirm: async () => {
+      const r = await api('/leads','POST',{nome_empresa:document.getElementById('m-empresa').value,email:document.getElementById('m-email')?.value,whatsapp:document.getElementById('m-whatsapp')?.value,cidade:document.getElementById('m-cidade')?.value,uf:document.getElementById('m-uf')?.value,segmento:document.getElementById('m-segmento')?.value,origem:document.getElementById('m-origem')?.value,notas:document.getElementById('m-notas')?.value});
+      if(r?.ok){toast('Lead criado ✓');closeModal();loadLeads();}else toast('Erro: '+(r?.error||''),'err');
+    }
+  },
+  cliente: {
+    title: 'Novo Cliente',
+    body: `<div class="form-group"><label class="form-label">Empresa *</label><input id="mc-empresa" class="form-input"></div><div class="form-row"><div class="form-group"><label class="form-label">E-mail</label><input id="mc-email" class="form-input" type="email"></div><div class="form-group"><label class="form-label">WhatsApp</label><input id="mc-whatsapp" class="form-input"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Plano</label><input id="mc-plano" class="form-input" placeholder="Ex: Pro"></div><div class="form-group"><label class="form-label">MRR (R$)</label><input id="mc-mrr" class="form-input" type="number" placeholder="197"></div></div>`,
+    confirm: async () => {
+      const r = await api('/clientes','POST',{nome_empresa:document.getElementById('mc-empresa').value,email:document.getElementById('mc-email')?.value,whatsapp:document.getElementById('mc-whatsapp')?.value,plano:document.getElementById('mc-plano')?.value,valor_mensal:parseFloat(document.getElementById('mc-mrr')?.value)||0});
+      if(r?.ok){toast('Cliente criado ✓');closeModal();loadClientes();}else toast('Erro','err');
+    }
+  },
+  campanha: {
+    title: 'Nova Campanha',
+    body: `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="form-group"><label class="form-label">Nome da campanha *</label><input id="mcamp-nome" class="form-input" placeholder="Ex: Reativação Maio"></div>
+        <div class="form-group"><label class="form-label">Canal *</label>
+          <select id="mcamp-tipo" class="form-input" style="background:var(--bg2)">
+            <option value="whatsapp">📱 WhatsApp</option>
+            <option value="email">✉️ E-mail</option>
+            <option value="sms">📩 SMS</option>
+            <option value="multi">🚀 Multi-canal</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SEGMENTAÇÃO -->
+      <div style="background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.12);border-radius:8px;padding:1rem;margin-bottom:.9rem">
+        <div style="font-size:.7rem;color:var(--cyan);letter-spacing:.08em;margin-bottom:.75rem">// SEGMENTAÇÃO DO PÚBLICO</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Tipo de público</label>
+            <select id="mcamp-publico" class="form-input" style="background:var(--bg2)" onchange="toggleCampSegmentos()">
+              <option value="todos_leads">Todos os leads</option>
+              <option value="todos_clientes">Todos os clientes</option>
+              <option value="cluster">Por cluster neural</option>
+              <option value="filtro">Filtro avançado</option>
+              <option value="manual">Seleção manual</option>
+            </select>
+          </div>
+          <div id="camp-cluster-wrap" style="display:none" class="form-group" style="margin:0">
+            <label class="form-label">Cluster</label>
+            <select id="mcamp-cluster" class="form-input" style="background:var(--bg2)">
+              <option value="hot">🔥 Compradores prontos (score ≥70)</option>
+              <option value="warm">🤔 Em consideração (40-69)</option>
+              <option value="cold">❄️ Descoberta (score &lt;40)</option>
+              <option value="qualificado">✅ Qualificados</option>
+              <option value="inativo">😴 Dormentes (+15 dias sem interação)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Filtros avançados -->
+        <div id="camp-filtros-wrap" style="display:none">
+          <div style="font-size:.68rem;color:var(--muted);margin-bottom:.5rem">Deixe em branco para não filtrar por esse campo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem">
+            <div class="form-group" style="margin:0"><label class="form-label">UF</label><input id="filt-uf" class="form-input" placeholder="Ex: BA, SP" style="font-size:.78rem"></div>
+            <div class="form-group" style="margin:0"><label class="form-label">Cidade</label><input id="filt-cidade" class="form-input" placeholder="Ex: Aracaju" style="font-size:.78rem"></div>
+            <div class="form-group" style="margin:0"><label class="form-label">Segmento</label><input id="filt-segmento" class="form-input" placeholder="Ex: construção" style="font-size:.78rem"></div>
+            <div class="form-group" style="margin:0"><label class="form-label">Status</label>
+              <select id="filt-status" class="form-input" style="background:var(--bg2);font-size:.78rem">
+                <option value="">Todos</option>
+                <option value="novo">Novo</option>
+                <option value="contatado">Contatado</option>
+                <option value="qualificado">Qualificado</option>
+                <option value="convertido">Convertido</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0"><label class="form-label">Plano</label><input id="filt-plano" class="form-input" placeholder="Ex: básico, pro" style="font-size:.78rem"></div>
+            <div class="form-group" style="margin:0"><label class="form-label">Score mín.</label><input id="filt-score-min" class="form-input" type="number" placeholder="0" min="0" max="100" style="font-size:.78rem"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem">
+            <div class="form-group" style="margin:0"><label class="form-label">Inadimplentes</label>
+              <select id="filt-inadimplente" class="form-input" style="background:var(--bg2);font-size:.78rem">
+                <option value="">Todos</option>
+                <option value="sim">Somente inadimplentes</option>
+                <option value="nao">Sem inadimplentes</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0"><label class="form-label">CNPJ contém</label><input id="filt-cnpj" class="form-input" placeholder="Ex: 00.000" style="font-size:.78rem"></div>
+          </div>
+        </div>
+
+        <!-- Manual -->
+        <div id="camp-manual-wrap" style="display:none">
+          <div style="font-size:.68rem;color:var(--muted);margin-bottom:.5rem">Digite os e-mails ou telefones separados por vírgula ou linha</div>
+          <textarea id="filt-manual" class="form-input" rows="3" style="resize:vertical;font-size:.78rem" placeholder="email1@x.com, email2@x.com&#10;ou&#10;71999990001&#10;71999990002"></textarea>
+        </div>
+
+        <button onclick="previewSegmentacao()" class="btn-cancel" style="margin-top:.6rem;font-size:.7rem;width:100%">🔍 PRÉVIA — ver quantos serão atingidos</button>
+        <div id="camp-preview" style="display:none;margin-top:.5rem;background:rgba(0,212,255,.08);border-radius:6px;padding:.6rem;font-size:.78rem;color:var(--cyan);text-align:center"></div>
+      </div>
+
+      <!-- Assunto (email) -->
+      <div class="form-group" id="camp-assunto-wrap">
+        <label class="form-label">Assunto do e-mail *</label>
+        <input id="mcamp-assunto" class="form-input" placeholder="Ex: Oferta especial para você!">
+      </div>
+
+      <!-- Conteúdo com abas -->
+      <div style="margin-bottom:.75rem">
+        <div style="display:flex;gap:.4rem;margin-bottom:.6rem">
+          <button class="canal-btn active" id="tab-texto" onclick="switchMsgTab('texto')">✏️ Texto</button>
+          <button class="canal-btn" id="tab-html" onclick="switchMsgTab('html')">🖥️ HTML</button>
+          <button class="canal-btn" id="tab-imagem" onclick="switchMsgTab('imagem')">🖼️ Imagem</button>
+          <div style="flex:1"></div>
+          <button onclick="gerarCopyIA()" class="canal-btn" style="color:var(--cyan);border-color:rgba(0,212,255,.3)">⚡ Gerar com IA</button>
+        </div>
+
+        <!-- Aba texto -->
+        <div id="msg-tab-texto">
+          <label class="form-label">Mensagem <span style="color:var(--muted);font-weight:400">— use {nome} para personalizar</span></label>
+          <textarea id="mcamp-conteudo" class="form-input" rows="4" style="resize:vertical" placeholder="Olá {nome}! Temos uma novidade especial para você..."></textarea>
+        </div>
+
+        <!-- Aba HTML -->
+        <div id="msg-tab-html" style="display:none">
+          <label class="form-label">HTML do e-mail <span style="color:var(--muted);font-weight:400">— Cole seu HTML completo ou importe arquivo</span></label>
+          <div style="display:flex;gap:.5rem;margin-bottom:.4rem">
+            <label class="canal-btn" style="cursor:pointer">📁 Importar .html <input type="file" accept=".html,.htm" style="display:none" onchange="importarHTML(this)"></label>
+            <button class="canal-btn" onclick="previewHTML()">👁️ Preview</button>
+          </div>
+          <textarea id="mcamp-html" class="form-input" rows="6" style="resize:vertical;font-family:monospace;font-size:.75rem" placeholder="<!DOCTYPE html>..."></textarea>
+          <div id="html-preview-frame" style="display:none;margin-top:.5rem;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+            <div style="background:var(--bg2);padding:.3rem .75rem;font-size:.65rem;color:var(--muted);letter-spacing:.05em">PREVIEW</div>
+            <iframe id="html-iframe" style="width:100%;height:300px;border:none;background:#fff"></iframe>
+          </div>
+        </div>
+
+        <!-- Aba imagem -->
+        <div id="msg-tab-imagem" style="display:none">
+          <label class="form-label">Imagem para WhatsApp / e-mail</label>
+          <div style="border:2px dashed var(--border);border-radius:8px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('img-upload').click()" onmouseover="this.style.borderColor='rgba(0,212,255,.4)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div id="img-preview-wrap">
+              <div style="font-size:2rem;margin-bottom:.5rem">🖼️</div>
+              <div style="font-size:.82rem;color:var(--muted)">Clique para selecionar imagem</div>
+              <div style="font-size:.7rem;color:var(--muted);margin-top:.25rem">JPG, PNG ou GIF — máx. 5MB</div>
+            </div>
+          </div>
+          <input type="file" id="img-upload" accept="image/*" style="display:none" onchange="handleImgUpload(this)">
+          <div class="form-group" style="margin-top:.75rem">
+            <label class="form-label">Legenda da imagem (opcional)</label>
+            <input id="mcamp-legenda" class="form-input" placeholder="Ex: Confira nossa nova oferta!">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ou URL da imagem</label>
+            <input id="mcamp-img-url" class="form-input" placeholder="https://...imagem.jpg" oninput="previewImgUrl(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA para email -->
+      <div id="camp-cta-wrap" style="display:grid;grid-template-columns:1fr 2fr;gap:.5rem">
+        <div class="form-group"><label class="form-label">Texto do botão</label><input id="mcamp-cta-texto" class="form-input" placeholder="Acessar agora"></div>
+        <div class="form-group"><label class="form-label">Link do botão</label><input id="mcamp-cta-link" class="form-input" placeholder="https://..."></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="form-group"><label class="form-label">Agendamento (opcional)</label><input id="mcamp-data" class="form-input" type="datetime-local"></div>
+        <div class="form-group"><label class="form-label">Envio</label>
+          <select id="mcamp-envio" class="form-input" style="background:var(--bg2)">
+            <option value="agora">Enviar agora</option>
+            <option value="agendar">Agendar</option>
+          </select>
+        </div>
+      </div>
+    `,
+    confirm: async () => {
+      const segmentacao = buildSegmentacao();
+      const conteudo = getMsgConteudo ? getMsgConteudo() : document.getElementById('mcamp-conteudo')?.value || '';
+      const imgUrl = campImgBase64 || document.getElementById('mcamp-img-url')?.value || '';
+      const legenda = document.getElementById('mcamp-legenda')?.value || '';
+      const r = await api('/campanhas','POST',{
+        nome: document.getElementById('mcamp-nome').value,
+        tipo: document.getElementById('mcamp-tipo').value,
+        conteudo: conteudo || legenda,
+        assunto: document.getElementById('mcamp-assunto')?.value || '',
+        cta_texto: document.getElementById('mcamp-cta-texto')?.value || '',
+        cta_link: document.getElementById('mcamp-cta-link')?.value || '',
+        img_url: imgUrl,
+        legenda,
+        agendado_para: document.getElementById('mcamp-data')?.value || null,
+        segmentacao,
+        enviar_agora: document.getElementById('mcamp-envio')?.value === 'agora'
+      });
+      campImgBase64 = null;
+      if(r?.ok){toast('Campanha criada ✓');closeModal();loadCampanhas();}else toast('Erro: '+(r?.error||''),'err');
+    }
+  },
+  jornada: {
+    title: 'Nova Jornada',
+    body: `<input type="hidden" id="mjorn-lead-id" value="">
+      <div class="form-group"><label class="form-label">Tipo *</label>
+        <select id="mjorn-tipo" class="form-input">
+          <option value="boas_vindas">🎉 Boas-vindas</option>
+          <option value="churn">🚨 Anti-churn</option>
+          <option value="retencao">💎 Retenção</option>
+          <option value="recuperacao">🔄 Recuperação</option>
+          <option value="rentabilizacao">📈 Rentabilização</option>
+          <option value="nutricao">🌱 Nutrição</option>
+          <option value="pos_venda">🤝 Pós-venda</option>
+          <option value="nps">⭐ NPS</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">E-mail</label><input id="mjorn-email" class="form-input" type="email" placeholder="lead@empresa.com"></div>
+        <div class="form-group"><label class="form-label">WhatsApp</label><input id="mjorn-wa" class="form-input" placeholder="(79) 99999-0000"></div>
+      </div>`,
+    confirm: async () => {
+      const email = document.getElementById('mjorn-email')?.value;
+      const whatsapp = document.getElementById('mjorn-wa')?.value;
+      const leadId = document.getElementById('mjorn-lead-id')?.value;
+      if (!email && !whatsapp) { toast('Informe e-mail ou WhatsApp', 'err'); return; }
+      const r = await api('/jornadas','POST',{tipo:document.getElementById('mjorn-tipo').value, email, whatsapp, lead_id: leadId || null});
+      if(r?.ok){toast('Jornada iniciada ✓');closeModal();loadJornadas();}else toast('Erro: '+(r?.error||''),'err');
+    }
+  },
+  conteudo: {
+    title: 'Gerar Conteúdo com IA',
+    body: `<div class="form-row"><div class="form-group"><label class="form-label">Plataforma *</label><select id="mcont-plat" class="form-input"><option value="instagram">📸 Instagram</option><option value="linkedin">💼 LinkedIn</option><option value="email">📧 E-mail</option><option value="blog">📝 Blog</option><option value="twitter">🐦 Twitter</option><option value="facebook">📘 Facebook</option></select></div><div class="form-group"><label class="form-label">Tom</label><select id="mcont-tom" class="form-input"><option value="profissional">Profissional</option><option value="descontraido">Descontraído</option><option value="tecnico">Técnico</option><option value="inspiracional">Inspiracional</option></select></div></div><div class="form-group"><label class="form-label">Tema *</label><input id="mcont-tema" class="form-input" placeholder="Ex: Benefícios do CRM com IA para vendas B2B"></div><div class="form-group"><label class="form-label">Público-alvo</label><input id="mcont-pub" class="form-input" placeholder="Ex: Gestores de vendas de PMEs"></div>`,
+    confirm: async () => {
+      const btn = document.getElementById('modal-confirm');
+      btn.textContent = 'Gerando...'; btn.disabled = true;
+      const r = await api('/conteudo/gerar','POST',{plataforma:document.getElementById('mcont-plat').value,tema:document.getElementById('mcont-tema').value,tom:document.getElementById('mcont-tom').value,publico:document.getElementById('mcont-pub')?.value});
+      btn.textContent='CONFIRMAR →';btn.disabled=false;
+      if(r?.ok){toast('Conteúdo gerado ✓');closeModal();loadConteudo();}else toast('Erro: '+(r?.error||''),'err');
+    }
+  },
+  nps: {
+    title: 'Nova Campanha NPS',
+    body: `<div class="form-group"><label class="form-label">Nome *</label><input id="mnps-nome" class="form-input"></div><div class="form-group"><label class="form-label">Pergunta</label><input id="mnps-perg" class="form-input" value="De 0 a 10, quanto você recomendaria nossos serviços?"></div>`,
+    confirm: async () => {
+      const r = await api('/nps','POST',{nome:document.getElementById('mnps-nome').value,pergunta:document.getElementById('mnps-perg').value});
+      if(r?.ok){toast('Campanha NPS criada ✓');closeModal();loadNPS();}else toast('Erro','err');
+    }
+  },
+  usuario: {
+    title: 'Novo Usuário',
+    body: `<div class="form-row"><div class="form-group"><label class="form-label">Nome *</label><input id="mu-nome" class="form-input"></div><div class="form-group"><label class="form-label">Papel</label><select id="mu-papel" class="form-input"><option value="operador">Operador</option><option value="admin">Admin</option><option value="viewer">Viewer</option></select></div></div><div class="form-group"><label class="form-label">E-mail *</label><input id="mu-email" class="form-input" type="email"></div><div class="form-group"><label class="form-label">Senha *</label><input id="mu-senha" class="form-input" type="password" placeholder="Mínimo 8 caracteres"></div>`,
+    confirm: async () => {
+      const r = await api('/auth/usuarios','POST',{nome:document.getElementById('mu-nome').value,email:document.getElementById('mu-email').value,senha:document.getElementById('mu-senha').value,papelNovo:document.getElementById('mu-papel').value});
+      if(r?.ok){toast('Usuário criado ✓');closeModal();loadConfig();}else toast('Erro: '+(r?.error||''),'err');
+    }
+  },
+  apikey: {
+    title: 'Gerar API Key',
+    body: `<div class="form-group"><label class="form-label">Nome da chave *</label><input id="mak-nome" class="form-input" placeholder="Ex: IA Licita Integration"></div><div class="form-group"><label class="form-label">Escopos</label><select id="mak-scope" class="form-input"><option value="read,write">Leitura e Escrita</option><option value="read">Somente leitura</option><option value="write">Somente escrita</option></select></div>`,
+    confirm: async () => {
+      const nome = document.getElementById('mak-nome').value;
+      if (!nome) { toast('Nome obrigatório','err'); return; }
+      const r = await api('/tenant/api-keys','POST',{nome,scopes:document.getElementById('mak-scope').value.split(',')});
+      if(r?.ok && r.data?.chave){
+        closeModal();
+        // Modal especial com a chave completa
+        const ov = document.createElement('div');
+        ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px';
+        const chave = r.data.chave;
+        ov.innerHTML=`<div style="background:#0a1828;border:1px solid rgba(0,212,255,.35);border-radius:12px;padding:32px;max-width:560px;width:100%;box-shadow:0 0 60px rgba(0,212,255,.1)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:1.4rem">🔑</span><h2 style="font-family:'Space Mono',monospace;font-size:1rem;color:#00d4ff;letter-spacing:.06em">API KEY GERADA</h2></div>
+          <p style="font-size:.78rem;color:#4d7a9e;margin-bottom:20px;font-family:'Space Mono',monospace">⚠ Copie agora — esta chave não será exibida novamente.</p>
+          <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:16px;margin-bottom:16px;word-break:break-all;font-family:'Space Mono',monospace;font-size:.78rem;color:#00d4ff;letter-spacing:.04em">${chave}</div>
+          <div style="display:flex;gap:10px">
+            <button onclick="navigator.clipboard.writeText('${chave}').then(()=>{this.textContent='✓ COPIADO!';this.style.background='#10b981';setTimeout(()=>{this.textContent='📋 COPIAR CHAVE';this.style.background='';},2000)})" style="flex:1;background:#00d4ff;color:#000;border:none;border-radius:6px;padding:12px;font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;cursor:pointer">📋 COPIAR CHAVE</button>
+            <button onclick="this.closest('div[style*=fixed]').remove();loadConfig();" style="background:transparent;border:1px solid rgba(0,212,255,.3);color:#4d7a9e;border-radius:6px;padding:12px 20px;font-family:'Space Mono',monospace;font-size:.75rem;cursor:pointer">FECHAR</button>
+          </div>
+          <p style="font-size:.7rem;color:#4d7a9e;margin-top:14px;font-family:'Space Mono',monospace;text-align:center">Use no IA LICITA: IACRM_API_KEY = ${chave}</p>
+        </div>`;
+        document.body.appendChild(ov);
+        ov.addEventListener('click',e=>{if(e.target===ov){ov.remove();loadConfig();}});
+      } else {
+        toast('Erro ao gerar API Key: '+(r?.error||''),'err');
+      }
+    }
+  },
+  integracao: {
+    title: 'Conectar Integração',
+    body: `<div class="form-group"><label class="form-label">Plataforma</label><select id="mint-plat" class="form-input"><option value="resend">Resend (E-mail)</option><option value="sms">SMS Provider</option><option value="push">Push Notifications</option></select></div><div class="form-group"><label class="form-label">API Key / Token</label><input id="mint-key" class="form-input" type="password" placeholder="Sua chave de API"></div>`,
+    confirm: async () => {
+      const r = await api('/integracoes','POST',{plataforma:document.getElementById('mint-plat').value,config:{api_key:document.getElementById('mint-key').value}});
+      if(r?.ok){toast('Integração conectada ✓');closeModal();}else toast('Erro','err');
+    }
+  }
+};
+
+function openModal(type) {
+  const def = modalDefs[type];
+  if (!def) return;
+  currentModal = type;
+  document.getElementById('modal-title').textContent = def.title;
+  document.getElementById('modal-body').innerHTML = def.body;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  currentModal = '';
+}
+
+function modalConfirm() {
+  const def = modalDefs[currentModal];
+  if (def?.confirm) def.confirm();
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Logout
+document.getElementById('notif-btn').addEventListener('click', () => {
+  toast('Nenhuma notificacao nova');
+});
+
+// MAIN ACTION btn default
+function mainAction() { openModal('lead'); }
+
+// INIT
+initUI();
+
+
+async function loadClusters() {
+  const [clustersRes, geoRes] = await Promise.all([
+    api('/geo/clusters'),
+    api('/geo/heatmap')
+  ]);
+
+  const clusters = clustersRes?.data || [];
+  const total = clustersRes?.total || 0;
+  const estados = geoRes?.data || [];
+
+  // Atualizar KPIs
+  const hot = clusters.find(c => c.id === 'hot');
+  const warm = clusters.find(c => c.id === 'warm');
+  document.getElementById('cl-total').textContent = total;
+  document.getElementById('cl-hot').textContent = hot?.total || 0;
+  document.getElementById('cl-warm').textContent = warm?.total || 0;
+  document.getElementById('cl-estados').textContent = estados.length;
+
+  // Renderizar clusters
+  const clist = document.getElementById('clusters-list');
+  if (!clusters.length) {
+    clist.innerHTML = '<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:2rem">Nenhum lead com score calculado ainda.<br>Os clusters aparecem após receber mensagens via WhatsApp.</div>';
+  } else {
+    clist.innerHTML = clusters.map(c => `
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.9rem;display:flex;gap:.9rem;align-items:flex-start">
+        <div style="font-size:1.4rem;flex-shrink:0">${c.icone}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.2rem">
+            <div style="font-size:.88rem;font-weight:600;color:${c.cor}">${c.nome}</div>
+            <div style="font-size:.78rem;color:var(--muted)">${c.total} leads (${c.pct}%)</div>
+          </div>
+          <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">${c.descricao}</div>
+          <div style="background:rgba(0,0,0,.2);border-radius:4px;height:4px;margin-bottom:.5rem">
+            <div style="height:100%;border-radius:4px;background:${c.cor};width:${c.pct}%;transition:width .6s"></div>
+          </div>
+          <div style="font-size:.73rem;color:${c.cor};opacity:.85">→ ${c.acao}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Renderizar mapa de calor
+  const gmap = document.getElementById('geo-heatmap');
+  if (!estados.length) {
+    gmap.innerHTML = '<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:2rem">Nenhum lead com estado (UF) preenchido ainda.</div>';
+  } else {
+    const maxTotal = Math.max(...estados.map(e => e.total), 1);
+    gmap.innerHTML = estados.slice(0, 12).map(e => {
+      const pct = Math.round((e.total / maxTotal) * 100);
+      const cor = e.taxa_hot >= 60 ? '#ef4444' : e.taxa_hot >= 30 ? '#f59e0b' : '#3b82f6';
+      return `
+        <div style="display:flex;gap:.75rem;align-items:center">
+          <div style="min-width:28px;font-size:.75rem;font-weight:700;color:${cor};text-align:center">${e.uf}</div>
+          <div style="flex:1;background:rgba(255,255,255,.05);border-radius:4px;height:20px;position:relative;overflow:hidden">
+            <div style="height:100%;background:${cor};opacity:.7;border-radius:4px;width:${pct}%;transition:width .6s"></div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 .5rem;font-size:.72rem;color:rgba(255,255,255,.85)">
+              ${e.total} leads · ${e.taxa_hot}% hot · top: ${e.top_cidades?.[0]?.cidade || '—'}
+            </div>
+          </div>
+          <div style="min-width:32px;font-size:.72rem;color:var(--muted);text-align:right">${e.score_medio}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Legenda
+    gmap.innerHTML += `
+      <div style="display:flex;gap:1rem;margin-top:.5rem;font-size:.7rem;color:var(--muted)">
+        <span style="color:#ef4444">■</span> +60% hot
+        <span style="color:#f59e0b">■</span> 30–60% hot
+        <span style="color:#3b82f6">■</span> &lt;30% hot
+        <span style="margin-left:auto">score médio →</span>
+      </div>
+    `;
+  }
+}
+
+
+
+function toggleSMSFields() {
+  const p = document.getElementById('cfg-sms-provedor').value;
+  document.getElementById('sms-zenvia-fields').style.display = p === 'zenvia' ? 'block' : 'none';
+  document.getElementById('sms-twilio-fields').style.display = p === 'twilio' ? 'block' : 'none';
+}
+
+async function saveEmailConfig() {
+  const resend_api_key = document.getElementById('cfg-resend-key').value.trim();
+  const email_remetente = document.getElementById('cfg-email-from').value.trim();
+  const email_site = document.getElementById('cfg-email-site').value.trim();
+  const email_instagram = document.getElementById('cfg-email-instagram').value.trim();
+  const email_rodape = document.getElementById('cfg-email-rodape').value.trim();
+  const payload = { email_remetente };
+  if (resend_api_key) payload.resend_api_key = resend_api_key;
+  // Config extra do email no campo config do tenant
+  const configAtual = await api('/tenant').then(r => r?.data?.config || {});
+  payload.config = { ...configAtual, email_site, email_instagram, email_rodape };
+  const r = await api('/tenant', 'PUT', payload);
+  if (r?.ok) toast('E-mail configurado ✓');
+  else toast('Erro: ' + (r?.error || ''), 'err');
+}
+
+async function testarEmail() {
+  const para = prompt('Enviar e-mail de teste para qual endereço?');
+  if (!para) return;
+  const r = await api('/email/testar', 'POST', { para });
+  if (r?.data?.enviado) toast('E-mail de teste enviado para ' + para + ' ✓');
+  else toast('Erro ao enviar. Verifique a API Key do Resend.', 'err');
+}
+
+async function saveSMSConfig() {
+  const provedor = document.getElementById('cfg-sms-provedor').value;
+  if (!provedor) { toast('Selecione um provedor SMS', 'err'); return; }
+  const dados = { provedor };
+  if (provedor === 'zenvia') {
+    dados.zenvia_token = document.getElementById('cfg-zenvia-token').value.trim();
+    dados.zenvia_from = document.getElementById('cfg-zenvia-from').value.trim();
+    if (!dados.zenvia_token) { toast('Informe o Token Zenvia', 'err'); return; }
+  } else {
+    dados.twilio_sid = document.getElementById('cfg-twilio-sid').value.trim();
+    dados.twilio_token = document.getElementById('cfg-twilio-token').value.trim();
+    dados.twilio_from = document.getElementById('cfg-twilio-from').value.trim();
+    if (!dados.twilio_sid || !dados.twilio_token) { toast('Informe SID e Token Twilio', 'err'); return; }
+  }
+  const r = await api('/sms/configurar', 'POST', dados);
+  if (r?.data?.configurado) toast('SMS configurado ✓');
+  else toast('Erro: ' + (r?.error || ''), 'err');
+}
+
+
+
+
+// ══════════════════════════════
+// MÍDIA DE CAMPANHAS
+// ══════════════════════════════
+let campImgBase64 = null;
+let campMsgTab = 'texto';
+
+function switchMsgTab(tab) {
+  campMsgTab = tab;
+  ['texto','html','imagem'].forEach(t => {
+    const el = document.getElementById('msg-tab-' + t);
+    const btn = document.getElementById('tab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  // Mostrar CTA só para texto/html email
+  const tipo = document.getElementById('mcamp-tipo')?.value;
+  const isEmail = tipo === 'email' || tipo === 'multi';
+  const ctaWrap = document.getElementById('camp-cta-wrap');
+  if (ctaWrap) ctaWrap.style.display = (isEmail && tab !== 'imagem') ? 'grid' : 'none';
+}
+
+function importarHTML(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const ta = document.getElementById('mcamp-html');
+    if (ta) ta.value = e.target.result;
+    // Sincronizar com textarea de conteúdo
+    const mc = document.getElementById('mcamp-conteudo');
+    if (mc) mc.value = e.target.result;
+    toast('HTML importado ✓');
+  };
+  reader.readAsText(file);
+}
+
+function previewHTML() {
+  const html = document.getElementById('mcamp-html')?.value;
+  if (!html) { toast('Cole o HTML primeiro', 'err'); return; }
+  const frame = document.getElementById('html-preview-frame');
+  const iframe = document.getElementById('html-iframe');
+  if (frame && iframe) {
+    frame.style.display = 'block';
+    iframe.srcdoc = html;
+  }
+}
+
+function handleImgUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Imagem muito grande (máx 5MB)', 'err'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    campImgBase64 = e.target.result;
+    const wrap = document.getElementById('img-preview-wrap');
+    if (wrap) wrap.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:200px;border-radius:6px;margin-bottom:.5rem"><div style="font-size:.75rem;color:var(--cyan)">' + file.name + '</div>';
+    toast('Imagem carregada ✓');
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewImgUrl(url) {
+  if (!url) return;
+  campImgBase64 = null;
+  const wrap = document.getElementById('img-preview-wrap');
+  if (wrap) wrap.innerHTML = '<img src="' + url + '" style="max-width:100%;max-height:200px;border-radius:6px">';
+}
+
+function getMsgConteudo() {
+  if (campMsgTab === 'html') {
+    return document.getElementById('mcamp-html')?.value || '';
+  }
+  return document.getElementById('mcamp-conteudo')?.value || '';
+}
+
+async function gerarCopyIA() {
+  const tipo = document.getElementById('mcamp-tipo')?.value || 'whatsapp';
+  const publico = document.getElementById('mcamp-publico')?.value || 'leads';
+  const nome = document.getElementById('mcamp-nome')?.value || '';
+  const r = await api('/campanhas/gerar-copy', 'POST', {
+    tipo, objetivo: nome, publico, tom: 'persuasivo e direto'
+  });
+  if (r?.data?.copy) {
+    const ta = document.getElementById('mcamp-conteudo');
+    if (ta) ta.value = r.data.copy;
+    switchMsgTab('texto');
+    toast('Copy gerado pela IA ✓');
+  } else {
+    toast('Erro ao gerar copy', 'err');
+  }
+}
+
+// ══════════════════════════════
+// SEGMENTAÇÃO DE CAMPANHAS
+// ══════════════════════════════
+function toggleCampSegmentos() {
+  const v = document.getElementById('mcamp-publico')?.value;
+  const clusterWrap = document.getElementById('camp-cluster-wrap');
+  const filtrosWrap = document.getElementById('camp-filtros-wrap');
+  const manualWrap = document.getElementById('camp-manual-wrap');
+  if (clusterWrap) clusterWrap.style.display = v === 'cluster' ? 'block' : 'none';
+  if (filtrosWrap) filtrosWrap.style.display = v === 'filtro' ? 'block' : 'none';
+  if (manualWrap) manualWrap.style.display = v === 'manual' ? 'block' : 'none';
+  // Mostrar/ocultar assunto e CTA para email
+  const tipo = document.getElementById('mcamp-tipo')?.value;
+  const isEmail = tipo === 'email' || tipo === 'multi';
+  if (document.getElementById('camp-assunto-wrap')) document.getElementById('camp-assunto-wrap').style.display = isEmail ? 'block' : 'none';
+  if (document.getElementById('camp-cta-wrap')) document.getElementById('camp-cta-wrap').style.display = isEmail ? 'grid' : 'none';
+  // Esconder preview
+  const prev = document.getElementById('camp-preview');
+  if (prev) prev.style.display = 'none';
+}
+
+function buildSegmentacao() {
+  const tipo = document.getElementById('mcamp-publico')?.value || 'todos_leads';
+  const seg = { tipo };
+  if (tipo === 'cluster') seg.cluster = document.getElementById('mcamp-cluster')?.value;
+  if (tipo === 'filtro') {
+    seg.filtros = {};
+    const uf = document.getElementById('filt-uf')?.value.trim();
+    const cidade = document.getElementById('filt-cidade')?.value.trim();
+    const segmento = document.getElementById('filt-segmento')?.value.trim();
+    const status = document.getElementById('filt-status')?.value;
+    const plano = document.getElementById('filt-plano')?.value.trim();
+    const scoreMin = document.getElementById('filt-score-min')?.value;
+    const inadimplente = document.getElementById('filt-inadimplente')?.value;
+    const cnpj = document.getElementById('filt-cnpj')?.value.trim();
+    if (uf) seg.filtros.uf = uf.split(',').map(u => u.trim().toUpperCase());
+    if (cidade) seg.filtros.cidade = cidade;
+    if (segmento) seg.filtros.segmento = segmento;
+    if (status) seg.filtros.status = status;
+    if (plano) seg.filtros.plano = plano;
+    if (scoreMin) seg.filtros.score_min = parseInt(scoreMin);
+    if (inadimplente) seg.filtros.inadimplente = inadimplente === 'sim';
+    if (cnpj) seg.filtros.cnpj_contem = cnpj;
+  }
+  if (tipo === 'manual') {
+    const raw = document.getElementById('filt-manual')?.value || '';
+    seg.lista = raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+  }
+  return seg;
+}
+
+async function previewSegmentacao() {
+  const seg = buildSegmentacao();
+  const prev = document.getElementById('camp-preview');
+  if (!prev) return;
+  prev.style.display = 'block';
+  prev.innerHTML = '<span style="opacity:.7">Calculando...</span>';
+  const r = await api('/campanhas/preview', 'POST', { segmentacao: seg });
+  if (r?.data !== undefined) {
+    const total = r.data?.total ?? 0;
+    const breakdown = r.data?.breakdown || '';
+    prev.innerHTML = '<strong style="font-size:1.1rem">' + total + '</strong> contatos serão atingidos'
+      + (breakdown ? '<br><span style="font-size:.7rem;opacity:.8">' + breakdown + '</span>' : '');
+  } else {
+    prev.innerHTML = '<span style="color:#ff5050">' + (r?.error || 'Erro ao calcular') + '</span>';
+  }
+}
+
+// Atualizar visibilidade do assunto ao mudar canal
+document.addEventListener('change', e => {
+  if (e.target?.id === 'mcamp-tipo') toggleCampSegmentos();
+});
+
+// ══════════════════════════════
+// EDITOR DE JORNADAS
+// ══════════════════════════════
+let jornadaEditando = null;
+let passosEditando = [];
+
+function switchJornTab(tab) {
+  ['ativas','templates','editor'].forEach(t => {
+    document.getElementById('jorn-tab-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'templates') loadJornadaTemplates();
+  if (tab === 'editor') loadEditorJornList();
+}
+
+async function loadJornadaTemplates() {
+  const grid = document.getElementById('jorn-templates-grid');
+  grid.innerHTML = '<div style="color:var(--muted);font-size:.82rem">Carregando...</div>';
+  const d = await api('/jornadas/templates');
+  if (!d?.data?.length) { grid.innerHTML = '<div style="color:var(--muted)">Nenhum template disponível</div>'; return; }
+  const icones = { boas_vindas:'👋', retencao:'💎', rentabilizacao:'📈', recuperacao:'🔁', churn:'🚨', pre_inadimplencia:'⚠️', inadimplencia:'🚨', pagamento_confirmado:'✅' };
+  grid.innerHTML = d.data.map(t => `
+    <div class="dash-card" style="cursor:pointer" onclick="ativarTemplate('${t.tipo}')">
+      <div style="font-size:1.5rem;margin-bottom:.5rem">${icones[t.tipo]||'🔄'}</div>
+      <div class="dc-title">${t.nome}</div>
+      <div style="font-size:.78rem;color:var(--muted);margin:.5rem 0 1rem">${t.descricao}</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem">
+        ${(t.passos||[]).map((p,i) => `<span style="font-size:.65rem;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:4px;padding:2px 6px;color:var(--cyan)">D${p.dia||i} ${p.canal}</span>`).join('')}
+      </div>
+      <button class="tb-btn" style="width:100%;font-size:.7rem" onclick="event.stopPropagation();ativarTemplate('${t.tipo}')">ATIVAR TEMPLATE →</button>
+    </div>
+  `).join('');
+}
+
+async function ativarTemplate(tipo) {
+  if (!confirm('Criar uma jornada ativa baseada no template "' + tipo + '"?')) return;
+  const r = await api('/jornadas', 'POST', { tipo, nome: tipo, usar_template: true, status: 'ativa' });
+  if (r?.ok) { toast('Jornada criada ✓'); switchJornTab('ativas'); loadJornadas(); }
+  else toast('Erro: ' + (r?.error || ''), 'err');
+}
+
+async function loadEditorJornList() {
+  const list = document.getElementById('editor-jorn-list');
+  list.innerHTML = '<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:1rem">Carregando...</div>';
+  const d = await api('/jornadas/templates');
+  const d2 = await api('/jornadas');
+  const templates = d?.data || [];
+  const ativas = d2?.data || [];
+  const icones = { boas_vindas:'👋', retencao:'💎', rentabilizacao:'📈', recuperacao:'🔁', churn:'🚨', pre_inadimplencia:'⚠️', inadimplencia:'🚨', pagamento_confirmado:'✅' };
+
+  list.innerHTML = '<div style="font-size:.65rem;color:var(--muted);letter-spacing:.05em;margin-bottom:.4rem">TEMPLATES DO SISTEMA</div>'
+    + templates.map(t => `
+      <div onclick="editarJornada(null,'${t.tipo}',${JSON.stringify(t.passos||[]).replace(/"/g,"'")},true)" style="padding:.5rem .75rem;border-radius:6px;cursor:pointer;border:1px solid var(--border);margin-bottom:.3rem;transition:all .2s" onmouseover="this.style.borderColor='rgba(0,212,255,.3)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:.78rem;font-weight:600">${icones[t.tipo]||'🔄'} ${t.nome}</div>
+        <div style="font-size:.68rem;color:var(--muted)">${(t.passos||[]).length} passos</div>
+      </div>`).join('')
+    + (ativas.length ? '<div style="font-size:.65rem;color:var(--muted);letter-spacing:.05em;margin:.75rem 0 .4rem">JORNADAS ATIVAS</div>' : '')
+    + ativas.map(j => `
+      <div onclick="editarJornadaAtiva('${j.id}','${j.nome||j.tipo}',${JSON.stringify(j.passos||[]).replace(/"/g,"'")})" style="padding:.5rem .75rem;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,.15);margin-bottom:.3rem;background:rgba(0,212,255,.04)">
+        <div style="font-size:.78rem;font-weight:600">⚡ ${j.nome||j.tipo}</div>
+        <div style="font-size:.68rem;color:var(--cyan)">${j.status} · ${(j.passos||[]).length} passos</div>
+      </div>`).join('');
+}
+
+function editarJornada(id, tipo, passos, isTemplate) {
+  jornadaEditando = { id, tipo, isTemplate };
+  passosEditando = typeof passos === 'string'
+    ? JSON.parse(passos.replace(/'/g, '"'))
+    : (Array.isArray(passos) ? passos : []);
+  renderEditor(tipo, isTemplate);
+}
+
+function editarJornadaAtiva(id, nome, passos) {
+  editarJornada(id, nome, passos, false);
+}
+
+function renderEditor(titulo, isTemplate) {
+  const main = document.getElementById('editor-main');
+  main.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <div>
+        <div class="dc-title">${titulo.toUpperCase()}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${isTemplate ? 'Editando template — salve para criar nova jornada' : 'Editando jornada ativa'}</div>
+      </div>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn-cancel" onclick="addPasso()" style="font-size:.7rem">+ PASSO</button>
+        <button class="tb-btn" onclick="salvarJornada()" style="font-size:.7rem">SALVAR →</button>
+      </div>
+    </div>
+    <div id="passos-editor"></div>
+  `;
+  renderPassos();
+}
+
+function renderPassos() {
+  const container = document.getElementById('passos-editor');
+  if (!container) return;
+  container.innerHTML = passosEditando.length === 0
+    ? '<div style="color:var(--muted);text-align:center;padding:2rem;font-size:.82rem">Nenhum passo. Clique em "+ PASSO" para adicionar.</div>'
+    : passosEditando.map((p, i) => `
+      <div class="editor-passo" id="passo-${i}">
+        <div class="editor-passo-head">
+          <div class="editor-dia-badge">D${p.dia||i}</div>
+          <div style="flex:1">
+            <div style="font-size:.72rem;color:var(--muted);margin-bottom:.3rem">CANAL</div>
+            <div style="display:flex;gap:.4rem">
+              ${['whatsapp','email','sms'].map(c => `<button class="canal-btn ${p.canal===c?'active':''}" onclick="setCanalPasso(${i},'${c}')">${c==='whatsapp'?'📱 WA':c==='email'?'✉️ Email':'📩 SMS'}</button>`).join('')}
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">INTERVALO</div>
+            <input type="number" value="${p.intervalo_horas||p.dia*24||0}" min="0" style="width:64px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 6px;font-size:.72rem;text-align:center" onchange="setIntervaloPasso(${i},this.value)">
+            <div style="font-size:.6rem;color:var(--muted)">horas</div>
+          </div>
+          <button onclick="removerPasso(${i})" style="background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.2);color:#ff5050;border-radius:4px;width:28px;height:28px;cursor:pointer;font-size:.8rem">✕</button>
+        </div>
+        ${p.canal === 'email' ? `
+          <div class="form-group" style="margin-bottom:.5rem">
+            <label class="form-label">Assunto do e-mail</label>
+            <input class="form-input" value="${p.assunto||''}" placeholder="Ex: Bem-vindo(a) ao programa!" onchange="setAssuntoPasso(${i},this.value)">
+          </div>
+          <div class="form-group" style="margin-bottom:.5rem">
+            <label class="form-label">Botão CTA (opcional)</label>
+            <div style="display:flex;gap:.5rem">
+              <input class="form-input" value="${p.cta_texto||''}" placeholder="Texto do botão" style="flex:1" onchange="setCtaPasso(${i},'cta_texto',this.value)">
+              <input class="form-input" value="${p.cta_link||''}" placeholder="https://..." style="flex:2" onchange="setCtaPasso(${i},'cta_link',this.value)">
+            </div>
+          </div>
+        ` : ''}
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">${p.canal==='email'?'Corpo do e-mail':'Mensagem'} <span style="color:var(--muted);font-weight:400">— use {nome} para personalizar</span></label>
+          <textarea class="form-input" rows="3" style="resize:vertical" onchange="setMensagemPasso(${i},this.value)">${p.conteudo||p.mensagem||''}</textarea>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:.5rem">
+          ${i > 0 ? `<button onclick="moverPasso(${i},-1)" class="btn-cancel" style="font-size:.65rem;padding:.25rem .6rem">↑</button>` : ''}
+          ${i < passosEditando.length-1 ? `<button onclick="moverPasso(${i},1)" class="btn-cancel" style="font-size:.65rem;padding:.25rem .6rem">↓</button>` : ''}
+          <div style="flex:1"></div>
+          <div style="font-size:.65rem;color:var(--muted);align-self:center">${passosEditando.length} passos · passo ${i+1}</div>
+        </div>
+      </div>
+    `).join('');
+}
+
+function addPasso() {
+  const ultimo = passosEditando[passosEditando.length-1];
+  passosEditando.push({ dia: (ultimo?.dia||0)+1, canal: 'whatsapp', conteudo: '', intervalo_horas: 24, assunto: '' });
+  renderPassos();
+}
+
+function removerPasso(i) {
+  if (!confirm('Remover este passo?')) return;
+  passosEditando.splice(i, 1);
+  renderPassos();
+}
+
+function moverPasso(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= passosEditando.length) return;
+  [passosEditando[i], passosEditando[j]] = [passosEditando[j], passosEditando[i]];
+  renderPassos();
+}
+
+function setCanalPasso(i, canal) { passosEditando[i].canal = canal; renderPassos(); }
+function setMensagemPasso(i, v) { passosEditando[i].conteudo = v; passosEditando[i].mensagem = v; }
+function setAssuntoPasso(i, v) { passosEditando[i].assunto = v; }
+function setIntervaloPasso(i, v) { passosEditando[i].intervalo_horas = parseInt(v)||0; }
+function setCtaPasso(i, campo, v) { passosEditando[i][campo] = v; }
+
+async function criarJornadaTemplate() {
+  const nome = prompt('Nome da nova jornada:');
+  if (!nome) return;
+  const tipo = prompt('Tipo (boas_vindas, retencao, churn, etc):') || 'custom';
+  jornadaEditando = { id: null, tipo, isTemplate: false };
+  passosEditando = [{ dia: 0, canal: 'whatsapp', conteudo: 'Olá {nome}! ...', intervalo_horas: 0 }];
+  renderEditor(nome, false);
+  document.getElementById('editor-main').querySelector('.dc-title').textContent = nome.toUpperCase();
+}
+
+async function salvarJornada() {
+  if (!jornadaEditando) return;
+  const { id, tipo, isTemplate } = jornadaEditando;
+  const passos = passosEditando;
+  if (!passos.length) { toast('Adicione pelo menos 1 passo', 'err'); return; }
+  let r;
+  if (id && !isTemplate) {
+    // Atualizar jornada existente
+    r = await api('/jornadas/' + id, 'PUT', { passos });
+  } else {
+    // Criar nova jornada
+    const nome = document.querySelector('#editor-main .dc-title')?.textContent?.replace('// ','') || tipo;
+    r = await api('/jornadas', 'POST', { tipo, nome, passos, status: 'ativa' });
+  }
+  if (r?.ok) {
+    toast('Jornada salva ✓');
+    loadEditorJornList();
+    loadJornadas();
+  } else {
+    toast('Erro: ' + (r?.error || ''), 'err');
+  }
+}
+
+// ══════════════════════════════
+// WIZARD DE ONBOARDING
+// ══════════════════════════════
+let wizardData = { nome:'', responsavel:'', email:'', segmento:'', phoneId:'', waToken:'', wabaId:'', wizSkipped:[] };
+
+function showWizard() {
+  document.getElementById('onboarding-wizard').style.display = 'flex';
+  wizGoTo(1);
+}
+
+function closeWizard() {
+  document.getElementById('onboarding-wizard').style.display = 'none';
+  localStorage.setItem('wiz_done', '1');
+}
+
+function wizGoTo(step) {
+  document.querySelectorAll('.wiz-step').forEach(s => s.style.display = 'none');
+  document.getElementById('wiz-step-' + step).style.display = 'block';
+  document.querySelectorAll('.wiz-dot').forEach(d => {
+    const n = parseInt(d.dataset.step);
+    d.className = 'wiz-dot' + (n < step ? ' done' : n === step ? ' active' : '');
+  });
+  const pct = ((step - 1) / 3 * 100);
+  document.getElementById('wiz-bar').style.width = pct + '%';
+}
+
+async function wizNext(step) {
+  if (step === 1) {
+    const nome = document.getElementById('wiz-nome').value.trim();
+    const resp = document.getElementById('wiz-responsavel').value.trim();
+    const email = document.getElementById('wiz-email').value.trim();
+    if (!nome || !resp || !email) { toast('Preencha todos os campos obrigatórios', 'err'); return; }
+    wizardData.nome = nome; wizardData.responsavel = resp; wizardData.email = email;
+    wizardData.segmento = document.getElementById('wiz-segmento').value;
+    const r = await api('/tenant', 'PUT', { nome, dados_extra: { responsavel: resp, segmento: wizardData.segmento } });
+    if (!r?.ok) { toast('Erro ao salvar empresa: ' + (r?.error || ''), 'err'); return; }
+    wizGoTo(2);
+
+  } else if (step === 2) {
+    const phoneId = document.getElementById('wiz-phone-id').value.trim();
+    const token = document.getElementById('wiz-wa-token').value.trim();
+    const wabaId = document.getElementById('wiz-waba-id').value.trim();
+    if (!phoneId || !token) { toast('Phone ID e Token são obrigatórios', 'err'); return; }
+    wizardData.phoneId = phoneId; wizardData.waToken = token; wizardData.wabaId = wabaId;
+    const r = await api('/whatsapp/configurar', 'POST', { phone_id: phoneId, token, waba_id: wabaId });
+    if (!r?.ok) { toast('Erro ao configurar WhatsApp: ' + (r?.error || ''), 'err'); return; }
+    toast('WhatsApp configurado ✓');
+    wizGoTo(3);
+
+  } else if (step === 3) {
+    const msg1 = document.getElementById('wiz-msg1').value.trim();
+    const msg2 = document.getElementById('wiz-msg2').value.trim();
+    const msg3 = document.getElementById('wiz-msg3').value.trim();
+    const passos = [
+      { dia: 0, canal: 'whatsapp', conteudo: msg1, intervalo_horas: 0 },
+      { dia: 3, canal: 'whatsapp', conteudo: msg2, intervalo_horas: 72 },
+      { dia: 7, canal: 'whatsapp', conteudo: msg3, intervalo_horas: 96 }
+    ];
+    const r = await api('/jornadas', 'POST', {
+      nome: 'Boas-vindas Neural',
+      tipo: 'boas_vindas',
+      status: 'ativa',
+      passos,
+      aplicar_automaticamente: true
+    });
+    if (!r?.ok) { toast('Erro ao criar jornada: ' + (r?.error || ''), 'err'); return; }
+    toast('Jornada criada ✓');
+    wizGoTo(4);
+    renderWizChecklist();
+  }
+}
+
+function wizSkip(step) {
+  wizardData.wizSkipped.push(step);
+  wizGoTo(step + 1);
+  if (step === 3) renderWizChecklist();
+}
+
+function renderWizChecklist() {
+  const items = [
+    { ok: !!wizardData.nome, label: 'Empresa configurada', sub: wizardData.nome || '' },
+    { ok: !!wizardData.phoneId && !wizardData.wizSkipped.includes(2), label: 'WhatsApp conectado', sub: wizardData.wizSkipped.includes(2) ? 'Configure em Configurações → WhatsApp' : '+55 ' + (wizardData.phoneId || '') },
+    { ok: !wizardData.wizSkipped.includes(3), label: 'Jornada de boas-vindas ativa', sub: wizardData.wizSkipped.includes(3) ? 'Crie em Jornadas → Nova jornada' : '3 mensagens em 7 dias' },
+    { ok: true, label: 'IA de sentimento ativa', sub: 'Analisa toda mensagem recebida automaticamente' },
+  ];
+  document.getElementById('wiz-checklist').innerHTML = items.map(i => `
+    <div style="display:flex;gap:.75rem;align-items:center">
+      <div style="width:20px;height:20px;border-radius:50%;background:${i.ok ? 'rgba(0,212,255,.2)' : 'rgba(255,80,80,.1)'};display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0">
+        ${i.ok ? '<span style="color:#00d4ff">✓</span>' : '<span style="color:#ff5050">!</span>'}
+      </div>
+      <div>
+        <div style="font-size:.84rem;color:${i.ok ? 'var(--text)' : 'var(--muted)'};font-weight:${i.ok ? '500' : '400'}">${i.label}</div>
+        ${i.sub ? `<div style="font-size:.75rem;color:var(--muted)">${i.sub}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Verificar se deve mostrar wizard ao logar
+async function checkFirstSetup() {
+  if (localStorage.getItem('wiz_done')) return;
+  try {
+    const d = await api('/tenant');
+    if (!d?.data) return;
+    const t = d.data;
+    // Mostrar se falta phone_id ou nome padrão
+    if (!t.whatsapp_phone_id || t.nome === 'Novo Tenant' || !t.nome) {
+      setTimeout(showWizard, 1200);
+    }
+  } catch(e) {}
+}
+
+</script>
+
+<!-- WIZARD DE ONBOARDING -->
+<div id="onboarding-wizard" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border:1px solid rgba(0,212,255,.2);border-radius:12px;width:min(580px,95vw);max-height:90vh;overflow-y:auto;padding:2rem;position:relative">
+    <!-- Progresso -->
+    <div style="display:flex;gap:8px;margin-bottom:2rem" id="wiz-steps">
+      <div class="wiz-dot active" data-step="1" title="Empresa">1</div>
+      <div style="flex:1;height:2px;background:rgba(0,212,255,.15);align-self:center;border-radius:2px"><div id="wiz-bar" style="height:100%;background:#00d4ff;border-radius:2px;width:0%;transition:width .4s"></div></div>
+      <div class="wiz-dot" data-step="2" title="WhatsApp">2</div>
+      <div style="flex:1;height:2px;background:rgba(0,212,255,.15);align-self:center;border-radius:2px"></div>
+      <div class="wiz-dot" data-step="3" title="Jornada">3</div>
+      <div style="flex:1;height:2px;background:rgba(0,212,255,.15);align-self:center;border-radius:2px"></div>
+      <div class="wiz-dot" data-step="4" title="Pronto">4</div>
+    </div>
+
+    <!-- PASSO 1: Empresa -->
+    <div id="wiz-step-1" class="wiz-step">
+      <div style="font-size:.7rem;color:#00d4ff;letter-spacing:.1em;margin-bottom:.5rem">PASSO 1 DE 4 // CONFIGURAÇÃO INICIAL</div>
+      <div style="font-size:1.4rem;font-weight:600;margin-bottom:.5rem">Vamos configurar sua conta</div>
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem">Em menos de 5 minutos você terá o IA CRM funcionando.</div>
+      <div class="form-group"><label class="form-label">Nome da empresa *</label><input id="wiz-nome" class="form-input" placeholder="Ex: Construtora ABC" autofocus></div>
+      <div class="form-group"><label class="form-label">Seu nome *</label><input id="wiz-responsavel" class="form-input" placeholder="Ex: João Silva"></div>
+      <div class="form-group"><label class="form-label">E-mail de contato *</label><input id="wiz-email" class="form-input" type="email" placeholder="joao@empresa.com.br"></div>
+      <div class="form-group"><label class="form-label">Segmento</label>
+        <select id="wiz-segmento" class="form-input" style="background:var(--bg2)">
+          <option value="">Selecione...</option>
+          <option>Licitações e Governo</option>
+          <option>Construção Civil</option>
+          <option>Serviços B2B</option>
+          <option>Varejo</option>
+          <option>Saúde</option>
+          <option>Tecnologia</option>
+          <option>Outro</option>
+        </select>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1.5rem">
+        <button class="tb-btn" onclick="wizNext(1)" style="padding:.75rem 2rem">PRÓXIMO →</button>
+      </div>
+    </div>
+
+    <!-- PASSO 2: WhatsApp -->
+    <div id="wiz-step-2" class="wiz-step" style="display:none">
+      <div style="font-size:.7rem;color:#00d4ff;letter-spacing:.1em;margin-bottom:.5rem">PASSO 2 DE 4 // WHATSAPP BUSINESS</div>
+      <div style="font-size:1.4rem;font-weight:600;margin-bottom:.5rem">Conecte seu WhatsApp</div>
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem">Você vai precisar do Meta for Developers. Siga o tutorial abaixo.</div>
+      
+      <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:8px;padding:1rem;margin-bottom:1.25rem">
+        <div style="font-size:.75rem;color:#00d4ff;margin-bottom:.75rem;letter-spacing:.05em">// COMO OBTER AS CREDENCIAIS</div>
+        <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.82rem;color:var(--muted)">
+          <div><span style="color:#00d4ff;font-weight:600">1.</span> Acesse <a href="https://developers.facebook.com" target="_blank" style="color:#00d4ff">developers.facebook.com</a> → Meus Apps</div>
+          <div><span style="color:#00d4ff;font-weight:600">2.</span> Abra seu app → WhatsApp → Configuração da API</div>
+          <div><span style="color:#00d4ff;font-weight:600">3.</span> Copie o <strong>Phone Number ID</strong> e o <strong>WABA ID</strong></div>
+          <div><span style="color:#00d4ff;font-weight:600">4.</span> Em Usuários do Sistema → Gerar token → selecione seu app → permissão <code>whatsapp_business_messaging</code></div>
+          <div><span style="color:#00d4ff;font-weight:600">5.</span> Configure o webhook: <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;font-size:.75rem">https://iacrmapp.com.br/api/crm/whatsapp/webhook</code></div>
+        </div>
+      </div>
+
+      <div class="form-group"><label class="form-label">Phone Number ID *</label><input id="wiz-phone-id" class="form-input" placeholder="Ex: 1132391656617172"></div>
+      <div class="form-group"><label class="form-label">Token de acesso (permanente) *</label><input id="wiz-wa-token" class="form-input" type="password" placeholder="EAAte..."></div>
+      <div class="form-group"><label class="form-label">WABA ID</label><input id="wiz-waba-id" class="form-input" placeholder="Ex: 1829447338442813"></div>
+      
+      <div style="display:flex;justify-content:space-between;margin-top:1.5rem;gap:1rem">
+        <button class="btn-cancel" onclick="wizSkip(2)" style="flex:1">PULAR POR AGORA</button>
+        <button class="tb-btn" onclick="wizNext(2)" style="flex:2">SALVAR E CONTINUAR →</button>
+      </div>
+    </div>
+
+    <!-- PASSO 3: Primeira Jornada -->
+    <div id="wiz-step-3" class="wiz-step" style="display:none">
+      <div style="font-size:.7rem;color:#00d4ff;letter-spacing:.1em;margin-bottom:.5rem">PASSO 3 DE 4 // PRIMEIRA AUTOMAÇÃO</div>
+      <div style="font-size:1.4rem;font-weight:600;margin-bottom:.5rem">Ative sua jornada de boas-vindas</div>
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem">Todo lead que entrar receberá uma sequência automática por WhatsApp.</div>
+      
+      <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.5rem">
+        <div id="wiz-jornada-preview" style="background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);border-radius:8px;padding:1rem">
+          <div style="font-size:.75rem;color:#00d4ff;margin-bottom:.75rem">// SEQUÊNCIA DE 3 DIAS (personalize abaixo)</div>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <div style="display:flex;gap:.75rem;align-items:flex-start">
+              <div style="min-width:32px;height:32px;border-radius:50%;background:rgba(0,212,255,.15);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#00d4ff;font-weight:600">D1</div>
+              <textarea id="wiz-msg1" class="form-input" rows="2" style="flex:1;resize:none">Olá {nome}! Seja bem-vindo(a)! Recebemos seus dados e em breve entraremos em contato. Alguma dúvida?</textarea>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start">
+              <div style="min-width:32px;height:32px;border-radius:50%;background:rgba(0,212,255,.15);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#00d4ff;font-weight:600">D3</div>
+              <textarea id="wiz-msg2" class="form-input" rows="2" style="flex:1;resize:none">Oi {nome}, tudo bem? Queria saber se você teve chance de avaliar nossa proposta. Posso te ajudar com algo?</textarea>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start">
+              <div style="min-width:32px;height:32px;border-radius:50%;background:rgba(0,212,255,.15);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#00d4ff;font-weight:600">D7</div>
+              <textarea id="wiz-msg3" class="form-input" rows="2" style="flex:1;resize:none">Olá {nome}! Última mensagem por aqui. Se quiser conversar sobre como podemos ajudar sua empresa, é só responder!</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:1rem;gap:1rem">
+        <button class="btn-cancel" onclick="wizSkip(3)" style="flex:1">PULAR POR AGORA</button>
+        <button class="tb-btn" onclick="wizNext(3)" style="flex:2">CRIAR JORNADA →</button>
+      </div>
+    </div>
+
+    <!-- PASSO 4: Concluído -->
+    <div id="wiz-step-4" class="wiz-step" style="display:none;text-align:center">
+      <div style="font-size:3rem;margin-bottom:1rem">🎯</div>
+      <div style="font-size:.7rem;color:#00d4ff;letter-spacing:.1em;margin-bottom:.5rem">// CONFIGURAÇÃO CONCLUÍDA</div>
+      <div style="font-size:1.5rem;font-weight:600;margin-bottom:.75rem">Tudo pronto!</div>
+      <div style="font-size:.88rem;color:var(--muted);margin-bottom:2rem;line-height:1.7">Seu IA CRM está configurado e pronto para capturar leads, analisar sentimentos e disparar jornadas automaticamente.</div>
+      
+      <div id="wiz-checklist" style="text-align:left;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;display:flex;flex-direction:column;gap:.6rem"></div>
+      
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.5rem">Próximo passo: adicione seu primeiro lead ou aguarde mensagens chegarem pelo WhatsApp.</div>
+      <button class="tb-btn" onclick="closeWizard()" style="width:100%;padding:.85rem">ACESSAR MEU PAINEL →</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.wiz-dot {
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;color:var(--muted);font-family:'Space Mono',monospace;
+  flex-shrink:0;transition:all .3s;
+}
+.wiz-dot.active {
+  background:#00d4ff;color:#0a0f1e;font-weight:700;border-color:#00d4ff;
+}
+.wiz-dot.done {
+  background:rgba(0,212,255,.25);color:#00d4ff;border-color:rgba(0,212,255,.4);
+}
+</style>
+
+</body>
+</html>

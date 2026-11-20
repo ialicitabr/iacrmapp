@@ -6,7 +6,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { createHmac, scryptSync, randomBytes, timingSafeEqual } from 'crypto';
 
-const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+// SUPABASE_SCHEMA: permite rodar o iaCRM num projeto Supabase já existente, num schema próprio (ex.: "iacrm"), sem misturar tabelas
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { db: { schema: process.env.SUPABASE_SCHEMA || 'public' } });
 // Sem JWT_SECRET forte, qualquer pessoa poderia gerar um token válido e entrar em qualquer empresa: o login fica bloqueado até configurar.
 const JWT_SECRET = process.env.JWT_SECRET || '';
 const JWT_OK = JWT_SECRET.length >= 32;
@@ -311,7 +312,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
                 whatsapp: waLead, cidade: leadCapturado.cidade || '',
                 origem: 'agente_aria_' + (tipo || 'iacrm'), status: 'novo',
                 dados_extra: { tipo_agente: tipo, dados_capturados: leadCapturado }
-              }).catch(e => console.error('[ARIA] Erro salvar lead:', e.message));
+              }).then(null, e => console.error('[ARIA] Erro salvar lead:', e.message));
 
               // Mensagem imediata de continuidade
               const msgBV = 'Ola ' + nomeLead + '! Aqui e a ARIA, assistente da IA Licita. ' +
@@ -323,7 +324,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
                 // Criar contato na inbox
                 const { data: waEx } = await sb.from('whatsapp_contatos').select('id').eq('tenant_id', agtTenantId).eq('telefone', waLead).maybeSingle();
                 if (!waEx) {
-                  await sb.from('whatsapp_contatos').insert({ id: crypto.randomUUID(), tenant_id: agtTenantId, telefone: waLead, nome: nomeLead, etiqueta: 'lead_aria', nao_lidas: 0, status_atendimento: 'aguardando', ultima_msg: new Date().toISOString(), ultima_msg_texto: msgBV.substring(0,60) }).catch(()=>{});
+                  await sb.from('whatsapp_contatos').insert({ id: crypto.randomUUID(), tenant_id: agtTenantId, telefone: waLead, nome: nomeLead, etiqueta: 'lead_aria', nao_lidas: 0, status_atendimento: 'aguardando', ultima_msg: new Date().toISOString(), ultima_msg_texto: msgBV.substring(0,60) }).then(null, ()=>{});
                 }
                 await sendWhatsApp(waLead, msgBV, agtTenantId).catch(e => console.error('[ARIA BV WA]', e.message));
               }
@@ -352,10 +353,10 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
             nome_empresa: nomeEmp, email: em, whatsapp: wa, cidade: cid,
             origem: orig, status: 'novo',
             dados_extra: { tipo, contexto, payload }
-          }).catch(() => {});
+          }).then(null, () => {});
           // Disparar jornada boas-vindas
           const { data: jBV } = await sb.from('crm_jornadas').select('id').eq('tenant_id', tenantId).eq('tipo', 'boas_vindas').eq('ativo', true).maybeSingle();
-          if (jBV) await sb.from('jornada_execucoes').insert({ id: crypto.randomUUID(), tenant_id: tenantId, jornada_id: jBV.id, lead_id: leadId, status: 'ativa', etapa_atual: 0, iniciado_em: new Date().toISOString() }).catch(() => {});
+          if (jBV) await sb.from('jornada_execucoes').insert({ id: crypto.randomUUID(), tenant_id: tenantId, jornada_id: jBV.id, lead_id: leadId, status: 'ativa', etapa_atual: 0, iniciado_em: new Date().toISOString() }).then(null, () => {});
           return ok(res, { data: { leadId, ok: true } });
         }
         return ok(res, { data: { ok: true } });
@@ -1798,7 +1799,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
         visitor_id: visitor_id || null, evento,
         props: props || {}, behavior: behavior || {},
         created_at: new Date().toISOString()
-      }).catch(() => {}); // silencioso se tabela não existir ainda
+      }).then(null, () => {}); // silencioso se tabela não existir ainda
       return ok(res, { data: { registrado: true } });
     }
 
@@ -1810,7 +1811,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
         visitor_id: visitor_id || null, pagina: pagina || '/',
         titulo: titulo || '', behavior: behavior || {},
         created_at: new Date().toISOString()
-      }).catch(() => {});
+      }).then(null, () => {});
       return ok(res, { data: { ok: true } });
     }
 
@@ -1906,11 +1907,12 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
       const tenantId = crypto.randomUUID();
       const userId = crypto.randomUUID();
       const trialFim = new Date(Date.now() + 14 * 86400000).toISOString();
-      await sb.from('tenants').insert({
-        id: tenantId, nome, slug, plano: plano || 'free',
+      const { error: tErr } = await sb.from('tenants').insert({
+        id: tenantId, nome, slug, email_admin: String(adminEmail).toLowerCase(), plano: plano || 'free',
         plano_status: plano && plano !== 'free' ? 'ativo' : 'trial',
         trial_fim: trialFim
       });
+      if (tErr) return err(res, 'Erro ao criar cliente: ' + tErr.message);
       await sb.from('crm_usuarios').insert({
         id: userId, tenant_id: tenantId,
         email: adminEmail.toLowerCase(), nome: adminNome || nome,

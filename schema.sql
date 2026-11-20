@@ -1,13 +1,17 @@
 -- ═══════════════════════════════════════════════════════
--- CRM SaaS — Schema Completo Multi-Tenant
--- Execute no SQL Editor do Supabase (novo projeto)
+-- iaCRM — banco completo, num schema próprio ("iacrm")
+-- Pode rodar num projeto Supabase que já tem outro sistema (ex.: Plano Certo ou IA Licita):
+-- as tabelas ficam separadas em "iacrm" e nada do schema "public" é alterado.
+-- Depois de rodar: Supabase → Project Settings → Data API → Exposed schemas → adicione "iacrm".
+-- Na Vercel: SUPABASE_SCHEMA=iacrm (e SUPABASE_URL / SUPABASE_SERVICE_KEY desse projeto).
 -- ═══════════════════════════════════════════════════════
 
--- 1. EXTENSÕES
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE SCHEMA IF NOT EXISTS iacrm;
+SET search_path TO iacrm, public, extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- 2. TENANTS (empresas que usam o CRM)
-CREATE TABLE tenants (
+CREATE TABLE IF NOT EXISTS tenants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
@@ -47,11 +51,11 @@ CREATE TABLE tenants (
   status TEXT DEFAULT 'ativo'
 );
 
-CREATE INDEX idx_tenants_slug ON tenants(slug);
-CREATE INDEX idx_tenants_api_key ON tenants(api_key);
+CREATE INDEX IF NOT EXISTS idx_tenants_slug ON tenants(slug);
+CREATE INDEX IF NOT EXISTS idx_tenants_api_key ON tenants(api_key);
 
 -- 3. USUÁRIOS DO CRM (admins/operadores de cada tenant)
-CREATE TABLE crm_usuarios (
+CREATE TABLE IF NOT EXISTS crm_usuarios (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
@@ -65,11 +69,11 @@ CREATE TABLE crm_usuarios (
   UNIQUE(tenant_id, email)
 );
 
-CREATE INDEX idx_crm_usuarios_tenant ON crm_usuarios(tenant_id);
-CREATE INDEX idx_crm_usuarios_email ON crm_usuarios(email);
+CREATE INDEX IF NOT EXISTS idx_crm_usuarios_tenant ON crm_usuarios(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_crm_usuarios_email ON crm_usuarios(email);
 
 -- 4. LEADS
-CREATE TABLE leads (
+CREATE TABLE IF NOT EXISTS leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   nome_empresa TEXT NOT NULL,
@@ -90,12 +94,12 @@ CREATE TABLE leads (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_leads_tenant ON leads(tenant_id);
-CREATE INDEX idx_leads_status ON leads(tenant_id, status);
-CREATE INDEX idx_leads_created ON leads(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leads_tenant ON leads(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(tenant_id, created_at DESC);
 
 -- 5. CLIENTES
-CREATE TABLE clientes (
+CREATE TABLE IF NOT EXISTS clientes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   lead_id UUID REFERENCES leads(id),
@@ -118,11 +122,11 @@ CREATE TABLE clientes (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_clientes_tenant ON clientes(tenant_id);
-CREATE INDEX idx_clientes_status ON clientes(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_clientes_tenant ON clientes(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_clientes_status ON clientes(tenant_id, status);
 
 -- 6. PIPELINE
-CREATE TABLE pipeline (
+CREATE TABLE IF NOT EXISTS pipeline (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   lead_id UUID REFERENCES leads(id),
@@ -139,11 +143,11 @@ CREATE TABLE pipeline (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_pipeline_tenant ON pipeline(tenant_id);
-CREATE INDEX idx_pipeline_etapa ON pipeline(tenant_id, etapa);
+CREATE INDEX IF NOT EXISTS idx_pipeline_tenant ON pipeline(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_pipeline_etapa ON pipeline(tenant_id, etapa);
 
 -- 7. WHATSAPP CONTATOS
-CREATE TABLE whatsapp_contatos (
+CREATE TABLE IF NOT EXISTS whatsapp_contatos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   telefone TEXT NOT NULL,
@@ -161,12 +165,12 @@ CREATE TABLE whatsapp_contatos (
   UNIQUE(tenant_id, telefone)
 );
 
-CREATE INDEX idx_wa_contatos_tenant ON whatsapp_contatos(tenant_id);
-CREATE INDEX idx_wa_contatos_telefone ON whatsapp_contatos(tenant_id, telefone);
-CREATE INDEX idx_wa_contatos_ultima ON whatsapp_contatos(tenant_id, ultima_msg DESC);
+CREATE INDEX IF NOT EXISTS idx_wa_contatos_tenant ON whatsapp_contatos(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_wa_contatos_telefone ON whatsapp_contatos(tenant_id, telefone);
+CREATE INDEX IF NOT EXISTS idx_wa_contatos_ultima ON whatsapp_contatos(tenant_id, ultima_msg DESC);
 
 -- 8. WHATSAPP MENSAGENS
-CREATE TABLE whatsapp_mensagens (
+CREATE TABLE IF NOT EXISTS whatsapp_mensagens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   contato_id UUID NOT NULL REFERENCES whatsapp_contatos(id) ON DELETE CASCADE,
@@ -179,12 +183,12 @@ CREATE TABLE whatsapp_mensagens (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_wa_msgs_contato ON whatsapp_mensagens(contato_id, created_at);
-CREATE INDEX idx_wa_msgs_tenant ON whatsapp_mensagens(tenant_id, created_at DESC);
-CREATE INDEX idx_wa_msgs_wamid ON whatsapp_mensagens(wamid);
+CREATE INDEX IF NOT EXISTS idx_wa_msgs_contato ON whatsapp_mensagens(contato_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_wa_msgs_tenant ON whatsapp_mensagens(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_wa_msgs_wamid ON whatsapp_mensagens(wamid);
 
 -- 9. CONTEÚDO IA
-CREATE TABLE conteudo (
+CREATE TABLE IF NOT EXISTS conteudo (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   plataforma TEXT NOT NULL CHECK (plataforma IN ('instagram','linkedin','blog','email','twitter','facebook','tiktok')),
@@ -203,11 +207,11 @@ CREATE TABLE conteudo (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_conteudo_tenant ON conteudo(tenant_id);
-CREATE INDEX idx_conteudo_status ON conteudo(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_conteudo_tenant ON conteudo(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_conteudo_status ON conteudo(tenant_id, status);
 
 -- 10. JORNADAS CRM
-CREATE TABLE crm_jornadas (
+CREATE TABLE IF NOT EXISTS crm_jornadas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   tipo TEXT NOT NULL,
@@ -225,12 +229,12 @@ CREATE TABLE crm_jornadas (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_jornadas_tenant ON crm_jornadas(tenant_id);
-CREATE INDEX idx_jornadas_status ON crm_jornadas(tenant_id, status);
-CREATE INDEX idx_jornadas_proximo ON crm_jornadas(proximo_disparo) WHERE status = 'ativa';
+CREATE INDEX IF NOT EXISTS idx_jornadas_tenant ON crm_jornadas(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_jornadas_status ON crm_jornadas(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_jornadas_proximo ON crm_jornadas(proximo_disparo) WHERE status = 'ativa';
 
 -- 11. CAMPANHAS
-CREATE TABLE campanhas (
+CREATE TABLE IF NOT EXISTS campanhas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
@@ -248,10 +252,10 @@ CREATE TABLE campanhas (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_campanhas_tenant ON campanhas(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_campanhas_tenant ON campanhas(tenant_id);
 
 -- 12. AUTOMAÇÕES
-CREATE TABLE automacoes (
+CREATE TABLE IF NOT EXISTS automacoes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   lead_id UUID REFERENCES leads(id),
@@ -266,10 +270,10 @@ CREATE TABLE automacoes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_automacoes_tenant ON automacoes(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_automacoes_tenant ON automacoes(tenant_id);
 
 -- 13. NPS
-CREATE TABLE nps_campanhas (
+CREATE TABLE IF NOT EXISTS nps_campanhas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
@@ -280,7 +284,7 @@ CREATE TABLE nps_campanhas (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE nps_respostas (
+CREATE TABLE IF NOT EXISTS nps_respostas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   campanha_id UUID REFERENCES nps_campanhas(id) ON DELETE CASCADE,
@@ -292,11 +296,11 @@ CREATE TABLE nps_respostas (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_nps_campanhas_tenant ON nps_campanhas(tenant_id);
-CREATE INDEX idx_nps_respostas_tenant ON nps_respostas(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_nps_campanhas_tenant ON nps_campanhas(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_nps_respostas_tenant ON nps_respostas(tenant_id);
 
 -- 14. PUSH NOTIFICATIONS
-CREATE TABLE push_notifications (
+CREATE TABLE IF NOT EXISTS push_notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   titulo TEXT NOT NULL,
@@ -308,7 +312,7 @@ CREATE TABLE push_notifications (
 );
 
 -- 15. INTEGRAÇÕES
-CREATE TABLE integracoes (
+CREATE TABLE IF NOT EXISTS integracoes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   plataforma TEXT NOT NULL,
@@ -319,10 +323,10 @@ CREATE TABLE integracoes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_integracoes_tenant ON integracoes(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_integracoes_tenant ON integracoes(tenant_id);
 
 -- 16. CALENDÁRIO
-CREATE TABLE calendario (
+CREATE TABLE IF NOT EXISTS calendario (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   titulo TEXT NOT NULL,
@@ -337,10 +341,10 @@ CREATE TABLE calendario (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_calendario_tenant ON calendario(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_calendario_tenant ON calendario(tenant_id);
 
 -- 17. WEBHOOK LOGS
-CREATE TABLE webhook_logs (
+CREATE TABLE IF NOT EXISTS webhook_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   evento TEXT NOT NULL,
@@ -350,10 +354,10 @@ CREATE TABLE webhook_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_webhook_logs_tenant ON webhook_logs(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_tenant ON webhook_logs(tenant_id, created_at DESC);
 
 -- 18. API KEYS (múltiplas por tenant)
-CREATE TABLE api_keys (
+CREATE TABLE IF NOT EXISTS api_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
@@ -364,10 +368,10 @@ CREATE TABLE api_keys (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_api_keys_chave ON api_keys(chave) WHERE ativo = true;
+CREATE INDEX IF NOT EXISTS idx_api_keys_chave ON api_keys(chave) WHERE ativo = true;
 
 -- 19. PAGAMENTOS DO CRM
-CREATE TABLE crm_pagamentos (
+CREATE TABLE IF NOT EXISTS crm_pagamentos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   plano TEXT NOT NULL,
@@ -379,21 +383,60 @@ CREATE TABLE crm_pagamentos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_crm_pagamentos_tenant ON crm_pagamentos(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_crm_pagamentos_tenant ON crm_pagamentos(tenant_id);
 
--- ═══ RLS (Row Level Security) ═══
--- Habilitando RLS em todas as tabelas
 
+-- ═══ Tabelas e colunas que o código usa e faltavam no schema original ═══
+ALTER TABLE crm_usuarios ADD COLUMN IF NOT EXISTS reset_token TEXT;
+ALTER TABLE crm_usuarios ADD COLUMN IF NOT EXISTS reset_token_expira TIMESTAMPTZ;
+ALTER TABLE crm_usuarios ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE crm_jornadas ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS visitor_id TEXT;
+ALTER TABLE whatsapp_contatos ADD COLUMN IF NOT EXISTS status_atendimento TEXT DEFAULT 'aguardando';
+CREATE UNIQUE INDEX IF NOT EXISTS integracoes_tenant_plataforma_uk ON integracoes(tenant_id, plataforma);
+
+CREATE TABLE IF NOT EXISTS jornada_execucoes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  jornada_id UUID REFERENCES crm_jornadas(id) ON DELETE CASCADE,
+  lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'ativa',
+  etapa_atual INTEGER DEFAULT 0,
+  iniciado_em TIMESTAMPTZ DEFAULT NOW(),
+  proximo_disparo TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_jornada_exec_disparo ON jornada_execucoes(status, proximo_disparo);
+CREATE TABLE IF NOT EXISTS sdk_eventos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  visitor_id TEXT, evento TEXT, props JSONB DEFAULT '{}', behavior JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_sdk_eventos_tenant ON sdk_eventos(tenant_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS sdk_pageviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  visitor_id TEXT, pagina TEXT, titulo TEXT, behavior JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_sdk_pageviews_tenant ON sdk_pageviews(tenant_id, created_at DESC);
+
+-- ═══ Segurança ═══
+-- RLS ligado e SEM políticas: só a chave service_role (usada pela API na Vercel) acessa.
+-- (O schema original criava políticas "USING (true)", que deixavam qualquer um ler e alterar
+--  os dados de todas as empresas pela chave pública do Supabase.)
 DO $$
-DECLARE
-  t TEXT;
+DECLARE t TEXT;
 BEGIN
-  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != 'tenants'
-  LOOP
-    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-    EXECUTE format('CREATE POLICY "service_access_%s" ON %I FOR ALL USING (true) WITH CHECK (true)', t, t);
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'iacrm' LOOP
+    EXECUTE format('ALTER TABLE iacrm.%I ENABLE ROW LEVEL SECURITY', t);
   END LOOP;
 END $$;
-
-ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_access_tenants" ON tenants FOR ALL USING (true) WITH CHECK (true);
+REVOKE ALL ON SCHEMA iacrm FROM anon, authenticated;
+REVOKE ALL ON ALL TABLES IN SCHEMA iacrm FROM anon, authenticated;
+GRANT USAGE ON SCHEMA iacrm TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA iacrm TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA iacrm TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA iacrm GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA iacrm GRANT ALL ON SEQUENCES TO service_role;

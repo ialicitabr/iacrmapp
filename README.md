@@ -1,4 +1,4 @@
-# iaCRM (iacrmapp.com.br)
+# iacrmapp
 
 CRM SaaS multiempresa com WhatsApp, IA e automações. Vercel (função `api/crm.js`) + Supabase.
 

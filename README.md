@@ -1,4 +1,4 @@
-# iacrmapp
+# iacrmappv2
 
 CRM SaaS multiempresa com WhatsApp, IA e automações. Vercel (função `api/crm.js`) + Supabase.
 

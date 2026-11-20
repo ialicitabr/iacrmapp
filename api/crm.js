@@ -508,6 +508,10 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
 
         if (tenantError) {
           console.error('Tenant insert error:', tenantError);
+          // banco fora do ar (ex.: projeto do Supabase pausado): mensagem clara para o cliente, detalhe técnico só no log
+          if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|network/i.test(String(tenantError.message) + ' ' + String(tenantError.details || ''))) {
+            return err(res, 'Nosso sistema está indisponível por alguns minutos. Tente novamente em instantes.', 503);
+          }
           return err(res, 'Erro ao criar empresa: ' + tenantError.message);
         }
 

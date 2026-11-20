@@ -4,10 +4,13 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { createClient } from '@supabase/supabase-js';
-import { createHmac } from 'crypto';
+import { createHmac, scryptSync, randomBytes, timingSafeEqual } from 'crypto';
 
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+// Sem JWT_SECRET forte, qualquer pessoa poderia gerar um token válido e entrar em qualquer empresa: o login fica bloqueado até configurar.
+const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_OK = JWT_SECRET.length >= 32;
+if (!JWT_OK) console.error('[iacrm] JWT_SECRET ausente ou curto (mínimo 32 caracteres). Configure na Vercel: openssl rand -hex 32');
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const RESEND_KEY = process.env.RESEND_API_KEY;
 
@@ -21,6 +24,7 @@ function base64url(str) {
 }
 
 function signJWT(payload) {
+  if (!JWT_OK) throw new Error('JWT_SECRET não configurado');
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const body = base64url(JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 }));
   const sig = createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64')
@@ -29,19 +33,33 @@ function signJWT(payload) {
 }
 
 function verifyJWT(token) {
+  if (!JWT_OK) return null;
   try {
     const [header, body, sig] = token.split('.');
     const expected = createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64')
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    if (sig !== expected) return null;
+    const a = Buffer.from(String(sig || '')), b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
     if (payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
   } catch { return null; }
 }
 
+// Senhas: scrypt com sal próprio por usuário (formato "scrypt$sal$hash"), independente do JWT_SECRET.
 function hashPassword(pass) {
-  return createHmac('sha256', JWT_SECRET + 'salt').update(pass).digest('hex');
+  const sal = randomBytes(16).toString('hex');
+  return 'scrypt$' + sal + '$' + scryptSync(String(pass), sal, 32).toString('hex');
+}
+function iguais(x, y) { const a = Buffer.from(String(x || '')), b = Buffer.from(String(y || '')); return a.length === b.length && a.length > 0 && timingSafeEqual(a, b); }
+// Confere a senha. Aceita também o formato antigo (HMAC com o JWT_SECRET), para quem já tinha conta:
+// nesse caso devolve legado=true e o login troca o hash pelo formato novo.
+function conferirSenha(pass, salvo) {
+  salvo = String(salvo || '');
+  if (salvo.startsWith('scrypt$')) { const [, sal, h] = salvo.split('$'); return { ok: !!sal && iguais(scryptSync(String(pass), sal, 32).toString('hex'), h), legado: false }; }
+  const segredos = [process.env.JWT_SECRET, process.env.JWT_SECRET_ANTIGO, 'change-me-in-production'].filter(Boolean);
+  const ok = segredos.some(seg => iguais(createHmac('sha256', seg + 'salt').update(String(pass)).digest('hex'), salvo));
+  return { ok, legado: ok };
 }
 
 async function authJWT(req) {
@@ -352,10 +370,16 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
     if (path === '/auth/login' && method === 'POST') {
       const { email, senha } = body;
       if (!email || !senha) return err(res, 'email e senha obrigatórios');
-      const { data: user } = await sb.from('crm_usuarios')
+      if (!JWT_OK) return err(res, 'Login temporariamente indisponível (configuração do servidor pendente).', 503);
+      const { data: candidatos, error: loginError } = await sb.from('crm_usuarios')
         .select('*, tenants(id,nome,slug,plano,plano_status,trial_fim,logo_url,cor_primaria,cor_secundaria,whatsapp_phone_id,gemini_api_key)')
-        .eq('email', email.toLowerCase()).eq('senha_hash', hashPassword(senha)).eq('status', 'ativo').maybeSingle();
+        .eq('email', String(email).toLowerCase()).eq('status', 'ativo').limit(10);
+      if (loginError) { console.error('Login error:', loginError); return err(res, 'Nosso sistema está indisponível por alguns minutos. Tente novamente em instantes.', 503); }
+      let user = null, legado = false;
+      for (const c of candidatos || []) { const r = conferirSenha(senha, c.senha_hash); if (r.ok) { user = c; legado = r.legado; break; } }
       if (!user) return err(res, 'Credenciais inválidas', 401);
+      if (legado) await sb.from('crm_usuarios').update({ senha_hash: hashPassword(senha) }).eq('id', user.id); // migra para o formato novo
+      delete user.senha_hash;
       const tenant = Array.isArray(user.tenants) ? user.tenants[0] : user.tenants;
       if (!tenant) return err(res, 'Tenant não encontrado', 404);
       if (tenant.plano_status === 'suspenso') return err(res, 'Conta suspensa. Entre em contato com o suporte.', 403);
@@ -484,6 +508,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
       if (!email.includes('@')) {
         return err(res, 'E-mail inválido');
       }
+      if (!JWT_OK) return err(res, 'Cadastro temporariamente indisponível (configuração do servidor pendente).', 503);
 
       try {
         // Criar tenant (empresa)

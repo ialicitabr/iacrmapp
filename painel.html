@@ -678,14 +678,7 @@ select.form-input option{background:var(--deep);color:var(--text)}
 
     <!-- ══ INTEGRAÇÕES ══ -->
     <div id="page-integracoes" class="page">
-      <div class="content-grid" id="int-grid">
-        <div class="cg-card"><div class="cg-plat">💬 META CLOUD API</div><div class="cg-title">WhatsApp Business</div><div class="cg-body">Conecte seu número WhatsApp via Meta Cloud API. Receba e envie mensagens com análise de sentimento neural.</div><div class="cg-foot"><div class="badge b-green">Conectado</div><button class="ab">Configurar</button></div></div>
-        <div class="cg-card"><div class="cg-plat">📧 RESEND</div><div class="cg-title">E-mail via Resend</div><div class="cg-body">Envio transacional e campanhas via Resend. Personalização por cluster, templates HTML e tracking de abertura.</div><div class="cg-foot"><div class="badge b-muted">Desconectado</div><button class="tb-btn" onclick="openModal('integracao')">Conectar</button></div></div>
-        <div class="cg-card"><div class="cg-plat">🤖 GEMINI AI</div><div class="cg-title">Google Gemini 2.0</div><div class="cg-body">Motor de IA generativa para conteúdo, análise de sentimento, respostas contextuais e insights comportamentais.</div><div class="cg-foot"><div class="badge b-green">Conectado</div><button class="ab">Configurar</button></div></div>
-        <div class="cg-card"><div class="cg-plat">📱 SMS</div><div class="cg-title">SMS Inteligente</div><div class="cg-body">Configure seu provedor de SMS preferido (Twilio, Zenvia, etc). Disparos automáticos com timing otimizado por IA.</div><div class="cg-foot"><div class="badge b-muted">Desconectado</div><button class="tb-btn" onclick="openModal('integracao')">Conectar</button></div></div>
-        <div class="cg-card"><div class="cg-plat">🔔 PUSH</div><div class="cg-title">Push Notifications</div><div class="cg-body">Web push para Chrome, Firefox e Safari. Mobile push via Firebase. Segmentação comportamental automática.</div><div class="cg-foot"><div class="badge b-muted">Desconectado</div><button class="tb-btn" onclick="openModal('integracao')">Conectar</button></div></div>
-        <div class="cg-card"><div class="cg-plat">🔌 WEBHOOKS</div><div class="cg-title">API & Webhooks</div><div class="cg-body">Configure endpoints para receber eventos em tempo real: lead criado, pipeline movido, mensagem recebida.</div><div class="cg-foot"><div class="badge b-cyan">Ativo</div><button class="ab">Configurar</button></div></div>
-      </div>
+      <div class="content-grid" id="int-grid"><div style="color:var(--muted);font-size:.8rem">Carregando integrações…</div></div>
     </div>
 
     <!-- ══ CONFIG ══ -->
@@ -704,7 +697,8 @@ select.form-input option{background:var(--deep);color:var(--text)}
           <div id="apikeys-list" style="display:flex;flex-direction:column;gap:.5rem"></div>
         </div>
         <div class="dash-card">
-          <div class="dc-title">// WHATSAPP</div>
+          <div class="dc-title">// WHATSAPP — API OFICIAL (META)</div>
+          <div style="font-size:.74rem;color:var(--muted);margin-bottom:.8rem">Para volume alto e menor risco de bloqueio. Prefere conectar lendo um QR code? Vá em <a href="#" onclick="showPage('integracoes',document.querySelector('[onclick*=integracoes]'));return false" style="color:var(--cyan)">Integrações → WhatsApp</a>.</div>
           <div class="form-group"><label class="form-label">Phone ID</label><input id="cfg-wphone" class="form-input" placeholder="Ex: 123456789"></div>
           <div class="form-group"><label class="form-label">Token de acesso</label><input id="cfg-wtoken" class="form-input" type="password" placeholder="Token Meta"></div>
           <div class="form-group"><label class="form-label">WABA ID</label><input id="cfg-wwaba" class="form-input" placeholder="ID da conta WhatsApp"></div>
@@ -850,7 +844,7 @@ function showPage(name, el) {
     }
   };
   // lazy load
-  const loaders = { leads: loadLeads, clientes: loadClientes, pipeline: loadPipeline, whatsapp: loadWhatsApp, campanhas: loadCampanhas, jornadas: loadJornadas, conteudo: loadConteudo, nps: loadNPS, insights: loadInsights, clusters: loadClusters, config: loadConfig };
+  const loaders = { leads: loadLeads, clientes: loadClientes, pipeline: loadPipeline, whatsapp: loadWhatsApp, campanhas: loadCampanhas, jornadas: loadJornadas, conteudo: loadConteudo, nps: loadNPS, insights: loadInsights, clusters: loadClusters, config: loadConfig, integracoes: loadIntegracoes };
   if (loaders[name]) loaders[name]();
 }
 
@@ -1599,6 +1593,95 @@ async function askInsight() {
   txt.textContent = r?.data?.resposta || 'Sem resposta';
 }
 
+// ── INTEGRAÇÕES (status real, vindo da API) ──
+const escH = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtNum = n => { n = String(n||'').replace(/\D/g,''); return n.length===13 ? '+'+n.slice(0,2)+' ('+n.slice(2,4)+') '+n.slice(4,9)+'-'+n.slice(9) : n.length===12 ? '+'+n.slice(0,2)+' ('+n.slice(2,4)+') '+n.slice(4,8)+'-'+n.slice(8) : n; };
+function irConfig() { showPage('config', document.querySelector('.sb-item[onclick*="\'config\'"]')); }
+async function loadIntegracoes() {
+  const g = document.getElementById('int-grid');
+  const r = await api('/integracoes/status');
+  if (!r?.ok) { g.innerHTML = '<div style="color:var(--red);font-size:.8rem">Não foi possível carregar as integrações. '+escH(r?.error||'')+'</div>'; return; }
+  const d = r.data, B = (cls, t) => `<div class="badge ${cls}">${t}</div>`;
+  const wa = d.whatsapp || {};
+  const waBadge = wa.status==='conectado' ? B('b-green','Conectado') : wa.status==='pendente' ? B('b-amber','Aguardando QR') : B('b-muted','Desconectado');
+  const waTxt = wa.modo==='qr' && wa.status==='conectado' ? `Conectado por QR code ao número <b>${escH(fmtNum(wa.numero))}</b>. A ARIA responde as mensagens e tudo aparece em WhatsApp.`
+    : wa.modo==='oficial' ? 'Conectado pela API oficial da Meta (Cloud API).'
+    : 'Conecte o WhatsApp da empresa lendo um QR code com o celular, como no WhatsApp Web. Leva 1 minuto.';
+  const fonte = x => x.fonte==='plataforma' ? ' Usando a conta da plataforma (limitado).' : x.fonte==='empresa' ? ' Usando a chave da sua empresa.' : '';
+  const cards = [
+    { plat:'💬 WHATSAPP', titulo:'WhatsApp', txt:waTxt, badge:waBadge,
+      btn: wa.modo==='oficial' ? `<button class="ab" onclick="irConfig()">Configurar</button>` : `<button class="tb-btn" onclick="waQrAbrir()">${wa.status==='conectado'?'Gerenciar':'Conectar com QR code'}</button>` },
+    { plat:'📧 RESEND', titulo:'E-mail', txt:'Envio de e-mails das jornadas, campanhas e avisos.'+fonte(d.email||{}), badge: d.email?.status==='conectado'?B('b-green','Conectado'):B('b-muted','Desconectado'),
+      btn:`<button class="${d.email?.fonte==='empresa'?'ab':'tb-btn'}" onclick="irConfig()">${d.email?.fonte==='empresa'?'Configurar':'Usar meu domínio'}</button>` },
+    { plat:'🤖 GEMINI', titulo:'Inteligência artificial', txt:'ARIA no WhatsApp, conteúdo, análise de sentimento e insights.'+fonte(d.gemini||{}), badge: d.gemini?.status==='conectado'?B('b-green','Ativa'):B('b-muted','Desligada'), btn:'' },
+    { plat:'🔌 WEBHOOKS', titulo:'API & Webhooks', txt: d.webhooks?.status==='ativo' ? 'Enviando eventos para '+escH(d.webhooks.url)+'.' : 'Receba eventos (lead criado, pipeline, mensagem) em outro sistema. Gere uma API Key em Configurações.', badge: d.webhooks?.status==='ativo'?B('b-cyan','Ativo'):B('b-muted','Desligado'), btn:`<button class="ab" onclick="irConfig()">Configurar</button>` },
+    { plat:'📱 SMS', titulo:'SMS', txt:'Disparo de SMS por provedor (Zenvia, Twilio).', badge:B('b-muted','Em breve'), btn:'' },
+    { plat:'🔔 PUSH', titulo:'Notificações push', txt:'Notificações no navegador e no celular dos seus clientes.', badge:B('b-muted','Em breve'), btn:'' }
+  ];
+  g.innerHTML = cards.map(c => `<div class="cg-card"><div class="cg-plat">${c.plat}</div><div class="cg-title">${c.titulo}</div><div class="cg-body">${c.txt}</div><div class="cg-foot">${c.badge}${c.btn}</div></div>`).join('');
+  window._waStatus = wa;
+}
+
+// ── WHATSAPP POR QR CODE ──
+let waQrTimer = null;
+function waQrFechar() { clearInterval(waQrTimer); waQrTimer = null; document.getElementById('wa-qr-ov')?.remove(); loadIntegracoes(); }
+function waQrOverlay(html) {
+  let ov = document.getElementById('wa-qr-ov');
+  if (!ov) {
+    ov = document.createElement('div'); ov.id = 'wa-qr-ov';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto';
+    ov.addEventListener('click', e => { if (e.target === ov) waQrFechar(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `<div style="background:#0a1828;border:1px solid rgba(0,212,255,.35);border-radius:12px;padding:26px;max-width:520px;width:100%;color:#cfe3f5;font-size:.85rem;line-height:1.5">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-family:'Space Mono',monospace;color:#00d4ff">💬 WHATSAPP POR QR CODE</b><button class="ab" onclick="waQrFechar()">✕</button></div>${html}</div>`;
+}
+async function waQrAbrir() {
+  const wa = window._waStatus || {};
+  if (!wa.qr_disponivel) return waQrOverlay(`<p>A conexão por QR code ainda não está disponível nesta instalação.</p><p style="color:var(--muted);font-size:.78rem;margin-top:8px">Administrador da plataforma: configure o servidor do WhatsApp (pasta <code>servidor-whatsapp</code>) e as variáveis EVOLUTION_URL e EVOLUTION_API_KEY na Vercel.</p>`);
+  if (wa.modo === 'qr' && wa.status === 'conectado') return waQrOverlay(`<p style="font-size:1rem">✅ Conectado ao número <b>${escH(fmtNum(wa.numero))}</b>.</p>
+    <p style="color:var(--muted);margin-top:8px">As mensagens chegam em <b>WhatsApp</b> no menu. Para trocar de número, desconecte e leia o QR code com o outro celular.</p>
+    <button class="ab" style="margin-top:16px;border-color:rgba(239,68,68,.5);color:#ef4444" onclick="waQrDesconectar()">Desconectar este número</button>`);
+  waQrOverlay(`<p>Conecte o WhatsApp da empresa como no <b>WhatsApp Web</b>: o celular lê um QR code e pronto.</p>
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);border-radius:8px;padding:12px;margin:14px 0;font-size:.78rem">
+      <b style="color:#f59e0b">⚠ Antes de conectar</b><br>Esta conexão usa o WhatsApp Web, <b>não é a API oficial da Meta</b>. O WhatsApp pode <b>bloquear o número</b>, principalmente com envios em massa ou para quem não tem o seu contato salvo. Use para atendimento e conversas iniciadas pelo cliente. Para volume alto, use a API oficial (Configurações → WhatsApp).</div>
+    <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" id="wa-qr-aceite" style="margin-top:3px"> <span>Entendi os riscos e quero conectar por QR code.</span></label>
+    <button class="tb-btn" style="width:100%;margin-top:16px" onclick="waQrConectar()">GERAR QR CODE →</button>`);
+}
+function waQrMostrar(qr) {
+  const src = qr ? (String(qr).startsWith('data:') ? qr : 'data:image/png;base64,' + qr) : '';
+  waQrOverlay(`<ol style="padding-left:18px;margin-bottom:12px"><li>Abra o <b>WhatsApp</b> no celular da empresa.</li><li>Toque em <b>⋮</b> (Android) ou <b>Configurações</b> (iPhone) → <b>Dispositivos conectados</b> → <b>Conectar dispositivo</b>.</li><li>Aponte a câmera para o código abaixo.</li></ol>
+    <div style="background:#fff;border-radius:10px;padding:12px;width:260px;height:260px;margin:0 auto;display:flex;align-items:center;justify-content:center">${src ? `<img src="${escH(src)}" alt="QR code do WhatsApp" style="width:236px;height:236px">` : '<span style="color:#333">Gerando…</span>'}</div>
+    <p id="wa-qr-msg" style="text-align:center;color:var(--muted);margin-top:12px;font-size:.78rem">Aguardando a leitura… o código se renova sozinho.</p>`);
+}
+async function waQrConectar() {
+  if (!document.getElementById('wa-qr-aceite')?.checked) return toast('Marque que entendeu os riscos para continuar', 'err');
+  waQrMostrar(null);
+  const r = await api('/whatsapp/qr/conectar', 'POST', { aceite_risco: true });
+  if (!r?.ok) return waQrOverlay(`<p style="color:#ef4444">Não foi possível gerar o QR code.</p><p style="color:var(--muted);font-size:.78rem;margin-top:6px">${escH(r?.error||'Tente de novo em instantes.')}</p><button class="ab" style="margin-top:14px" onclick="waQrAbrir()">Tentar de novo</button>`);
+  if (r.data.estado === 'conectado') return waQrConectado();
+  waQrMostrar(r.data.qr);
+  let n = 0; clearInterval(waQrTimer);
+  waQrTimer = setInterval(async () => {
+    if (!document.getElementById('wa-qr-ov')) return clearInterval(waQrTimer);
+    if (++n > 60) { clearInterval(waQrTimer); return waQrOverlay(`<p>O QR code expirou.</p><button class="tb-btn" style="width:100%;margin-top:14px" onclick="waQrAbrir()">Gerar outro</button>`); }
+    const s = await api('/whatsapp/qr/status');
+    if (s?.data?.estado === 'conectado') return waQrConectado(s.data.numero);
+    if (s?.data?.qr) { const img = document.querySelector('#wa-qr-ov img'); const src = String(s.data.qr).startsWith('data:') ? s.data.qr : 'data:image/png;base64,' + s.data.qr; if (img) { if (img.getAttribute('src') !== src) img.setAttribute('src', src); } else waQrMostrar(s.data.qr); }
+  }, 3000);
+}
+async function waQrConectado(numero) {
+  clearInterval(waQrTimer);
+  await loadIntegracoes();
+  waQrOverlay(`<p style="font-size:1.05rem">✅ WhatsApp conectado${numero ? ' ao número <b>' + escH(fmtNum(numero)) + '</b>' : ''}!</p><p style="color:var(--muted);margin-top:8px">As mensagens já chegam em <b>WhatsApp</b> no menu, e a ARIA responde automaticamente (você pode desligar em Configurações).</p><button class="tb-btn" style="width:100%;margin-top:16px" onclick="waQrFechar()">PRONTO</button>`);
+}
+async function waQrDesconectar() {
+  if (!confirm('Desconectar este número do iaCRM? O celular continua com o WhatsApp normalmente.')) return;
+  const r = await api('/whatsapp/qr/desconectar', 'POST', {});
+  if (!r?.ok) return toast('Erro: ' + (r?.error||''), 'err');
+  toast('WhatsApp desconectado'); waQrFechar();
+}
+
 // ── CONFIG ──
 async function loadConfig() {
   const d = await api('/tenant');
@@ -1730,7 +1813,10 @@ async function saveConfig() {
 
 async function saveWhatsApp() {
   const r = await api('/whatsapp/configurar','POST',{phone_id:document.getElementById('cfg-wphone').value,token:document.getElementById('cfg-wtoken').value,waba_id:document.getElementById('cfg-wwaba').value});
-  if(r?.ok) toast('WhatsApp configurado ✓'); else toast('Erro: '+(r?.error||'desconhecido'),'err');
+  if(!r?.ok) return toast('Erro: '+(r?.error||'desconhecido'),'err');
+  toast('WhatsApp (API oficial) configurado ✓');
+  const d=r.data||{};
+  if(d.webhook_url) alert('Último passo na Meta (WhatsApp → Configuração → Webhook):\n\nURL de retorno:\n'+d.webhook_url+'\n\nToken de verificação:\n'+(d.verify_token||'(defina WA_VERIFY_TOKEN na Vercel)')+'\n\nDepois assine o campo "messages".');
 }
 
 // ── MODAL ──
@@ -2664,7 +2750,7 @@ async function checkFirstSetup() {
     if (!d?.data) return;
     const t = d.data;
     // Mostrar se falta phone_id ou nome padrão
-    if (!t.whatsapp_phone_id || t.nome === 'Novo Tenant' || !t.nome) {
+    if ((!t.whatsapp_phone_id && t.whatsapp_modo !== 'qr') || t.nome === 'Novo Tenant' || !t.nome) {
       setTimeout(showWizard, 1200);
     }
   } catch(e) {}

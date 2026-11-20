@@ -126,13 +126,39 @@ async function sendEmail(to, subject, html, tenantId) {
   return true;
 }
 
+// ─────────────────────────────────────────
+// WHATSAPP: dois modos por empresa
+//  · 'qr'      → Evolution API (QR code, sessão do WhatsApp Web; servidor em servidor-whatsapp/)
+//  · 'oficial' → Meta Cloud API (phone_id + token)
+// ─────────────────────────────────────────
+const EVO_URL = () => String(process.env.EVOLUTION_URL || '').replace(/\/+$/, '');
+const evoConfigurada = () => !!(EVO_URL() && process.env.EVOLUTION_API_KEY);
+const instanciaDe = tid => 'iacrm_' + String(tid).replace(/-/g, '');
+const assinaturaEvo = tid => createHmac('sha256', JWT_SECRET).update('evo:' + tid).digest('hex').slice(0, 40);
+const urlWebhookEvo = tid => `${(process.env.APP_URL || 'https://iacrmapp.com.br').replace(/\/+$/, '')}/api/crm/whatsapp/evo?t=${tid}&s=${assinaturaEvo(tid)}`;
+async function evo(caminho, { method = 'GET', body } = {}) {
+  if (!evoConfigurada()) { const e = new Error('Servidor do WhatsApp (QR code) não configurado: defina EVOLUTION_URL e EVOLUTION_API_KEY na Vercel.'); e.status = 503; throw e; }
+  const r = await fetch(EVO_URL() + caminho, { method, headers: { apikey: process.env.EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(25000) });
+  const txt = await r.text(); let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = { raw: txt.slice(0, 300) }; }
+  if (!r.ok) { const m = j?.response?.message; const e = new Error('Evolution ' + r.status + ': ' + (Array.isArray(m) ? m.join(' ') : m || j?.message || j?.error || 'erro')); e.status = r.status; e.dados = j; throw e; }
+  return j;
+}
+const modoWhatsApp = t => t?.whatsapp_modo === 'qr' ? 'qr' : (t?.whatsapp_phone_id && t?.whatsapp_token ? 'oficial' : null);
+const normalizarTel = phone => { let p = String(phone || '').replace(/\D/g, ''); if (p.length <= 11) p = '55' + p; return p; };
+
 async function sendWhatsApp(phone, msg, tenantId, templateName = null, templateParams = []) {
-  const { data: t } = await sb.from('tenants').select('whatsapp_phone_id,whatsapp_token').eq('id', tenantId).maybeSingle();
-  if (!t?.whatsapp_phone_id || !t?.whatsapp_token) throw new Error('WhatsApp não configurado');
-  let p = (phone || '').replace(/[\s\-\+\(\)]/g, '');
-  if (!p.startsWith('55')) p = '55' + p;
+  const { data: t } = await sb.from('tenants').select('*').eq('id', tenantId).maybeSingle();
+  const modo = modoWhatsApp(t);
+  if (!modo) throw new Error('WhatsApp não configurado');
+  const p = normalizarTel(phone);
+  if (modo === 'qr') {
+    if (templateName) throw new Error('Modelos aprovados só existem na API oficial do WhatsApp. No QR code, envie o texto da mensagem.');
+    const r = await evo(`/message/sendText/${instanciaDe(tenantId)}`, { method: 'POST', body: { number: p, text: String(msg || '') } });
+    return r?.key?.id || null;
+  }
   const payload = templateName
-    ? { messaging_product: 'whatsapp', to: p, type: 'template', template: { name: templateName, language: { code: 'pt_BR' }, components: templateParams.length ? [{ type: 'body', parameters: templateParams.map(v => ({ type: 'text', text: v })) }] : [] } }
+    ? { messaging_product: 'whatsapp', to: p, type: 'template', template: { name: templateName, language: { code: 'pt_BR' }, components: templateParams.length ? [{ type: 'body', parameters: templateParams.map(v => ({ type: 'text', text: String(v) })) }] : [] } }
     : { messaging_product: 'whatsapp', to: p, type: 'text', text: { body: msg } };
   const r = await fetch(`https://graph.facebook.com/v25.0/${t.whatsapp_phone_id}/messages`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t.whatsapp_token}` },
@@ -141,6 +167,44 @@ async function sendWhatsApp(phone, msg, tenantId, templateName = null, templateP
   const d = await r.json();
   if (!r.ok) throw new Error(d.error?.message || 'Erro WhatsApp');
   return d.messages?.[0]?.id;
+}
+
+// Mensagem recebida (Meta ou QR code): grava na caixa de entrada e, se ligado, a ARIA responde
+async function receberMensagemWhatsApp(tw, telefone, conteudo, wamid, nomePerfil) {
+  const tid = tw.id; conteudo = String(conteudo || '[mídia]').slice(0, 4000);
+  if (wamid) { const { data: ja } = await sb.from('whatsapp_mensagens').select('id').eq('tenant_id', tid).eq('wamid', wamid).limit(1); if (ja?.length) return; } // reentrega
+  const { data: cEx } = await sb.from('whatsapp_contatos').select('id,lead_id,nao_lidas,status_atendimento,etiqueta,nome').eq('tenant_id', tid).eq('telefone', telefone).maybeSingle();
+  let cid;
+  if (!cEx) {
+    cid = crypto.randomUUID();
+    await sb.from('whatsapp_contatos').insert({ id: cid, tenant_id: tid, telefone, nome: nomePerfil || telefone, etiqueta: 'novo', nao_lidas: 1, ultima_msg: new Date().toISOString(), ultima_msg_texto: conteudo.substring(0, 60) });
+  } else {
+    cid = cEx.id;
+    const patch = { nao_lidas: (cEx.nao_lidas || 0) + 1, ultima_msg: new Date().toISOString(), ultima_msg_texto: conteudo.substring(0, 60) };
+    if (nomePerfil && (!cEx.nome || cEx.nome === telefone)) patch.nome = nomePerfil;
+    await sb.from('whatsapp_contatos').update(patch).eq('id', cid);
+  }
+  await sb.from('whatsapp_mensagens').insert({ id: crypto.randomUUID(), tenant_id: tid, contato_id: cid, direcao: 'recebida', conteudo, tipo: 'text', wamid: wamid || null, created_at: new Date().toISOString() });
+
+  // ARIA (só se o robô estiver ligado e a conversa não estiver com a equipe)
+  try {
+    const cfg = tw?.config || {};
+    const roboLigado = cfg.bot_ativo !== false && cfg.aria_atendimento !== false;
+    const statusAtual = cEx?.status_atendimento || 'aguardando';
+    const comEquipe = ['atendendo', 'finalizado'].includes(statusAtual) || cEx?.etiqueta === 'escalar';
+    if (!roboLigado || comEquipe) return;
+    const { data: hist } = await sb.from('whatsapp_mensagens').select('direcao,conteudo').eq('contato_id', cid).eq('tenant_id', tid).order('created_at', { ascending: false }).limit(8);
+    const histStr = (hist || []).reverse().map(m => (m.direcao === 'recebida' ? 'Cliente' : 'ARIA') + ': ' + m.conteudo).join('\n');
+    const sysP = cfg.bot_prompt || cfg.aria_prompt || ('Voce e ARIA, assistente de atendimento da ' + (tw?.nome || 'empresa') + '. Responda de forma cordial, profissional e objetiva, no maximo 3 linhas. Nunca invente precos, prazos ou politicas. Se o cliente pedir um humano, reclamar ou voce nao souber a resposta, termine com [ESCALAR].');
+    const resp = await callGemini(sysP + '\n\nHistorico:\n' + histStr + '\n\nResposta:', tid);
+    const escalar = String(resp).includes('[ESCALAR]');
+    const msgFinal = String(resp).replace(/\[ESCALAR\]/g, '').trim();
+    if (escalar) await sb.from('whatsapp_contatos').update({ status_atendimento: 'aguardando', etiqueta: 'escalar' }).eq('id', cid);
+    if (!msgFinal) return;
+    const id = await sendWhatsApp(telefone, msgFinal, tid);
+    await sb.from('whatsapp_mensagens').insert({ id: crypto.randomUUID(), tenant_id: tid, contato_id: cid, direcao: 'enviada', conteudo: msgFinal, tipo: 'text', wamid: id || null, created_at: new Date(Date.now() + 500).toISOString() });
+    await sb.from('whatsapp_contatos').update({ ultima_msg: new Date().toISOString(), ultima_msg_texto: msgFinal.substring(0, 60) }).eq('id', cid);
+  } catch (eA) { console.error('[ARIA]', eA.message); }
 }
 
 async function dispararWebhook(tenantId, evento, dados) {
@@ -597,6 +661,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
       return res.status(200).json({ ok: true, versao: 'v2025-05-07', status: 'online' });
     }
     if (path === '/ping-gemini-full' && method === 'GET') {
+      if (!auth || auth.papel !== 'superadmin') return err(res, 'Não autorizado', 401);
       const key = GEMINI_KEY;
       if (!key) return res.status(200).json({ ok: false, erro: 'GEMINI_API_KEY não definida na Vercel. Acesse: vercel.com → projeto iacrm-app → Settings → Environment Variables' });
       const modelos = [
@@ -625,7 +690,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
           const ms = Date.now() - t0;
           if (!d.error) {
             const texto = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            return res.status(200).json({ ok: true, modelo, resposta: texto, ms, keyPrefix: key.substring(0, 8) + '...' });
+            return res.status(200).json({ ok: true, modelo, resposta: texto, ms });
           }
           resultados.push({ modelo, erro: d.error.message, code: d.error.code });
         } catch(e) {
@@ -633,6 +698,74 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
         }
       }
       return res.status(200).json({ ok: false, erro: 'Nenhum modelo funcionou', resultados });
+    }
+
+
+    // ═══════════════════════════════════════
+    // WEBHOOKS DO WHATSAPP (públicos: a Meta e a Evolution não mandam login)
+    // ═══════════════════════════════════════
+    // Meta Cloud API — verificação
+    if (path === '/whatsapp/webhook' && method === 'GET') {
+      const qs = new URLSearchParams((req.url || '').split('?')[1] || '');
+      const mode = qs.get('hub.mode'), token = qs.get('hub.verify_token') || '', challenge = qs.get('hub.challenge') || '';
+      const fixo = process.env.WA_VERIFY_TOKEN || '';
+      if (mode === 'subscribe' && fixo && iguais(token, fixo)) return res.status(200).send(challenge);
+      if (mode === 'subscribe' && token.length >= 16) {
+        const { data: tw } = await sb.from('tenants').select('id').eq('whatsapp_webhook_token', token).maybeSingle();
+        if (tw) return res.status(200).send(challenge);
+      }
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    // Meta Cloud API — mensagens recebidas
+    if (path === '/whatsapp/webhook' && method === 'POST') {
+      try {
+        for (const entry of body?.entry || []) for (const ch of entry.changes || []) {
+          const v = ch.value || {};
+          const phoneId = v.metadata?.phone_number_id; if (!phoneId) continue;
+          const { data: tw } = await sb.from('tenants').select('*').eq('whatsapp_phone_id', phoneId).maybeSingle();
+          if (!tw) continue;
+          for (const m of v.messages || []) {
+            const perfil = (v.contacts || []).find(c => c.wa_id === m.from);
+            const conteudo = m.text?.body || m.button?.text || m.interactive?.button_reply?.title || m.interactive?.list_reply?.title || m.image?.caption || '[mídia]';
+            await receberMensagemWhatsApp(tw, m.from, conteudo, m.id, perfil?.profile?.name);
+          }
+        }
+      } catch (e) { console.error('[WA webhook]', e.message); }
+      return res.status(200).json({ ok: true });
+    }
+    // WhatsApp por QR code (Evolution API) — eventos da sessão de cada empresa
+    if (path === '/whatsapp/evo' && method === 'POST') {
+      const tid = String(query.t || new URLSearchParams((req.url || '').split('?')[1] || '').get('t') || '');
+      const sig = String(query.s || new URLSearchParams((req.url || '').split('?')[1] || '').get('s') || '');
+      if (!JWT_OK || !/^[0-9a-f-]{36}$/.test(tid) || !iguais(sig, assinaturaEvo(tid))) return res.status(401).json({ ok: false });
+      if (body?.instance && body.instance !== instanciaDe(tid)) return res.status(401).json({ ok: false });
+      try {
+        const { data: tw } = await sb.from('tenants').select('*').eq('id', tid).maybeSingle();
+        if (!tw) return res.status(200).json({ ok: true });
+        const ev = String(body?.event || '').toLowerCase().replace(/_/g, '.');
+        const d = body?.data || {};
+        if (ev === 'connection.update') {
+          const st = d.state === 'open' ? 'conectado' : d.state === 'connecting' ? 'conectando' : 'desconectado';
+          const patch = { whatsapp_qr_status: st };
+          if (d.state === 'open' && d.wuid) patch.whatsapp_qr_numero = String(d.wuid).split('@')[0].split(':')[0];
+          await sb.from('tenants').update(patch).eq('id', tid);
+        }
+        if (ev === 'messages.upsert') {
+          for (const msg of Array.isArray(d) ? d : [d]) {
+            const k = msg.key || {};
+            if (k.fromMe) continue;
+            let jid = String(k.remoteJid || '');
+            if (jid.endsWith('@lid')) jid = String(k.remoteJidAlt || k.senderPn || '');
+            if (!jid.endsWith('@s.whatsapp.net')) continue; // ignora grupos, status e canais
+            const telefone = jid.split('@')[0].split(':')[0];
+            const mm = msg.message || {};
+            const conteudo = mm.conversation || mm.extendedTextMessage?.text || mm.imageMessage?.caption || mm.videoMessage?.caption
+              || mm.buttonsResponseMessage?.selectedDisplayText || mm.listResponseMessage?.title || (mm.audioMessage ? '[áudio]' : '[mídia]');
+            await receberMensagemWhatsApp(tw, telefone, conteudo, k.id, msg.pushName);
+          }
+        }
+      } catch (e) { console.error('[EVO webhook]', e.message); }
+      return res.status(200).json({ ok: true });
     }
 
         let tenantId, papel;
@@ -723,6 +856,12 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
     // 2.1 — tenant.dados
     if (path === '/tenant' && method === 'GET') {
       const { data } = await sb.from('tenants').select('*').eq('id', tenantId).maybeSingle();
+      // segredos nunca voltam inteiros para o navegador (antes iam para qualquer usuário, inclusive vendedores)
+      if (data) {
+        const mascara = v => v ? '••••' + String(v).slice(-4) : null;
+        for (const k of ['whatsapp_token', 'gemini_api_key', 'resend_api_key', 'webhook_secret', 'api_key']) if (k in data) data[k] = mascara(data[k]);
+        if (papel !== 'admin' && 'whatsapp_webhook_token' in data) data.whatsapp_webhook_token = null;
+      }
       return ok(res, { data });
     }
 
@@ -731,7 +870,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
       if (papel !== 'admin') return err(res, 'Acesso negado', 403);
       const campos = ['nome', 'logo_url', 'cor_primaria', 'cor_secundaria', 'whatsapp_phone_id', 'whatsapp_token', 'whatsapp_waba_id', 'gemini_api_key', 'resend_api_key', 'email_remetente', 'webhook_url', 'webhook_eventos', 'config'];
       const updates = {};
-      campos.forEach(f => { if (body[f] !== undefined) updates[f] = body[f]; });
+      campos.forEach(f => { if (body[f] !== undefined && !(typeof body[f] === 'string' && body[f].startsWith('••••'))) updates[f] = body[f]; }); // não regrava a máscara por cima da chave
       updates.updated_at = new Date().toISOString();
       await sb.from('tenants').update(updates).eq('id', tenantId);
       return ok(res, { data: { atualizado: true } });
@@ -934,56 +1073,7 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
     }
 
     // ═══════════════════════════════════════
-    // WEBHOOK META
-    if (path === '/whatsapp/webhook' && method === 'GET') {
-      const qs = new URLSearchParams((req.url || '').split('?')[1] || '');
-      const mode = qs.get('hub.mode'), token = qs.get('hub.verify_token'), challenge = qs.get('hub.challenge');
-      const fixed = process.env.WA_VERIFY_TOKEN || 'iacrm2025';
-      if (mode === 'subscribe' && token === fixed) return res.status(200).send(challenge);
-      const { data: tw } = await sb.from('tenants').select('id').eq('whatsapp_token', token).maybeSingle();
-      if (mode === 'subscribe' && tw) return res.status(200).send(challenge);
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    if (path === '/whatsapp/webhook' && method === 'POST') {
-      const changes = body?.entry?.[0]?.changes?.[0];
-      const msgObj = changes?.value?.messages?.[0];
-      if (!msgObj && changes?.value?.statuses) return res.status(200).json({ ok: true });
-      const phoneId = changes?.value?.metadata?.phone_number_id || body?.entry?.[0]?.id;
-      if (!msgObj || !phoneId) return res.status(200).json({ ok: true });
-      const { data: tw } = await sb.from('tenants').select('id,nome,config,whatsapp_phone_id').eq('whatsapp_phone_id', phoneId).maybeSingle();
-      if (!tw) return res.status(200).json({ ok: true });
-      const tid = tw.id;
-      const telefone = msgObj.from;
-      const conteudo = msgObj.text?.body || '[mídia]';
-      const { data: cEx } = await sb.from('whatsapp_contatos').select('id,lead_id,nao_lidas,status_atendimento').eq('tenant_id', tid).eq('telefone', telefone).maybeSingle();
-      let cid;
-      if (!cEx) {
-        cid = crypto.randomUUID();
-        await sb.from('whatsapp_contatos').insert({ id: cid, tenant_id: tid, telefone, nome: telefone, etiqueta: 'novo', nao_lidas: 1, ultima_msg: new Date().toISOString(), ultima_msg_texto: conteudo.substring(0, 60) });
-      } else {
-        cid = cEx.id;
-        await sb.from('whatsapp_contatos').update({ nao_lidas: (cEx.nao_lidas||0)+1, ultima_msg: new Date().toISOString(), ultima_msg_texto: conteudo.substring(0, 60) }).eq('id', cid);
-      }
-      await sb.from('whatsapp_mensagens').insert({ id: crypto.randomUUID(), tenant_id: tid, contato_id: cid, direcao: 'recebida', conteudo, tipo: 'text', wamid: msgObj.id, created_at: new Date().toISOString() });
-
-      // ARIA atendimento (só se não em atendimento humano)
-      try {
-        const statusAtual = cEx?.status_atendimento || 'aguardando';
-        if (statusAtual !== 'atendendo' && statusAtual !== 'finalizado' && tw?.config?.aria_atendimento !== false) {
-          const { data: hist } = await sb.from('whatsapp_mensagens').select('direcao,conteudo').eq('contato_id', cid).eq('tenant_id', tid).order('created_at', { ascending: false }).limit(6);
-          const histStr = (hist||[]).reverse().map(m => (m.direcao==='recebida'?'Cliente':'ARIA')+': '+m.conteudo).join('\n');
-          const sysP = (tw?.config?.aria_prompt || 'Voce e ARIA, assistente de vendas da ' + (tw?.nome||'IA Licita') + '. Responda de forma profissional e objetiva. Maximo 3 linhas. Se pedir humano ou frustracao intensa, termine com [ESCALAR].');
-          const resp = await callGemini(sysP + '\n\nHistorico:\n' + histStr + '\n\nMensagem: ' + conteudo + '\n\nResposta:', tid);
-          const msgFinal = resp.replace('[ESCALAR]','').trim();
-          if (resp.includes('[ESCALAR]')) await sb.from('whatsapp_contatos').update({ status_atendimento: 'aguardando', etiqueta: 'escalar' }).eq('id', cid);
-          await sendWhatsApp(telefone, msgFinal, tid);
-          await sb.from('whatsapp_mensagens').insert({ id: crypto.randomUUID(), tenant_id: tid, contato_id: cid, direcao: 'enviada', conteudo: msgFinal, tipo: 'text', created_at: new Date(Date.now()+500).toISOString() });
-          await sb.from('whatsapp_contatos').update({ ultima_msg: new Date().toISOString(), ultima_msg_texto: msgFinal.substring(0,60) }).eq('id', cid);
-        }
-      } catch(eA) { console.error('[ARIA]', eA.message); }
-      return res.status(200).json({ ok: true });
-    }
+    // (webhooks do WhatsApp: ver bloco público antes da autenticação)
 
     // 6. WHATSAPP — 14 rotas
     // ═══════════════════════════════════════
@@ -1150,13 +1240,79 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
       const { phone_id, token, waba_id } = body;
       if (!phone_id || !token) return err(res, 'phone_id e token obrigatórios');
       await sb.from('tenants').update({ whatsapp_phone_id: phone_id, whatsapp_token: token, whatsapp_waba_id: waba_id || null }).eq('id', tenantId);
-      return ok(res, { data: { configurado: true } });
+      const { error: eModo } = await sb.from('tenants').update({ whatsapp_modo: 'oficial' }).eq('id', tenantId);
+      if (eModo) console.error('[whatsapp_modo] rode o schema.sql atualizado:', eModo.message);
+      const { data: tw } = await sb.from('tenants').select('whatsapp_webhook_token').eq('id', tenantId).maybeSingle();
+      return ok(res, { data: { configurado: true, webhook_url: (process.env.APP_URL || 'https://iacrmapp.com.br').replace(/\/+$/, '') + '/api/crm/whatsapp/webhook', verify_token: process.env.WA_VERIFY_TOKEN || tw?.whatsapp_webhook_token || null } });
+    }
+
+    // ── WhatsApp por QR code (Evolution) ──
+    if (path === '/whatsapp/qr/conectar' && method === 'POST') {
+      if (papel !== 'admin') return err(res, 'Apenas administradores conectam o WhatsApp', 403);
+      if (!body.aceite_risco) return err(res, 'Confirme que entendeu os riscos da conexão por QR code.');
+      const inst = instanciaDe(tenantId), hook = { enabled: true, url: urlWebhookEvo(tenantId), byEvents: false, base64: false, events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'] };
+      try {
+        let estado = null;
+        try { estado = (await evo(`/instance/connectionState/${inst}`))?.instance?.state || null; } catch (e) { if (e.status !== 404) throw e; }
+        let qr = null;
+        if (!estado) {
+          const r = await evo('/instance/create', { method: 'POST', body: { instanceName: inst, integration: 'WHATSAPP-BAILEYS', qrcode: true, groupsIgnore: true, rejectCall: false, alwaysOnline: false, readMessages: false, syncFullHistory: false, webhook: hook } });
+          qr = r?.qrcode?.base64 || null; estado = 'connecting';
+        } else {
+          await evo(`/webhook/set/${inst}`, { method: 'POST', body: { webhook: hook } }).catch(e => console.error('[evo webhook/set]', e.message));
+          if (estado !== 'open') { const r = await evo(`/instance/connect/${inst}`); qr = r?.base64 || null; }
+        }
+        const { error: eUp } = await sb.from('tenants').update({ whatsapp_modo: 'qr', whatsapp_qr_status: estado === 'open' ? 'conectado' : 'conectando', whatsapp_qr_aceite_em: new Date().toISOString() }).eq('id', tenantId);
+        if (eUp) return err(res, 'Rode o schema.sql atualizado no Supabase (colunas do WhatsApp QR): ' + eUp.message, 500);
+        return ok(res, { data: { estado: estado === 'open' ? 'conectado' : 'conectando', qr } });
+      } catch (e) { return err(res, e.status === 503 ? e.message : 'Não foi possível falar com o servidor do WhatsApp: ' + e.message, 502); }
+    }
+    if (path === '/whatsapp/qr/status' && method === 'GET') {
+      const { data: t } = await sb.from('tenants').select('*').eq('id', tenantId).maybeSingle();
+      if (t?.whatsapp_modo !== 'qr') return ok(res, { data: { estado: 'desconectado' } });
+      const inst = instanciaDe(tenantId);
+      try {
+        const st = (await evo(`/instance/connectionState/${inst}`))?.instance?.state;
+        if (st === 'open') {
+          let numero = t.whatsapp_qr_numero || null;
+          if (!numero) { const lista = await evo(`/instance/fetchInstances?instanceName=${inst}`).catch(() => []); const it = Array.isArray(lista) ? lista[0] : lista; const jid = it?.ownerJid || it?.instance?.owner || ''; numero = String(jid).split('@')[0].split(':')[0] || null; }
+          if (t.whatsapp_qr_status !== 'conectado' || numero !== t.whatsapp_qr_numero) await sb.from('tenants').update({ whatsapp_qr_status: 'conectado', whatsapp_qr_numero: numero }).eq('id', tenantId);
+          return ok(res, { data: { estado: 'conectado', numero } });
+        }
+        const r = await evo(`/instance/connect/${inst}`).catch(() => null);
+        return ok(res, { data: { estado: 'conectando', qr: r?.base64 || null } });
+      } catch (e) {
+        if (e.status === 404) { await sb.from('tenants').update({ whatsapp_qr_status: 'desconectado' }).eq('id', tenantId); return ok(res, { data: { estado: 'desconectado' } }); }
+        return err(res, 'Servidor do WhatsApp indisponível: ' + e.message, 502);
+      }
+    }
+    if (path === '/whatsapp/qr/desconectar' && method === 'POST') {
+      if (papel !== 'admin') return err(res, 'Apenas administradores desconectam o WhatsApp', 403);
+      const inst = instanciaDe(tenantId);
+      await evo(`/instance/logout/${inst}`, { method: 'DELETE' }).catch(() => {});
+      await evo(`/instance/delete/${inst}`, { method: 'DELETE' }).catch(() => {});
+      await sb.from('tenants').update({ whatsapp_modo: null, whatsapp_qr_status: 'desconectado', whatsapp_qr_numero: null }).eq('id', tenantId);
+      return ok(res, { data: { desconectado: true } });
+    }
+    // ── status real de cada integração (o painel mostra isto, não texto fixo) ──
+    if (path === '/integracoes/status' && method === 'GET') {
+      const { data: t } = await sb.from('tenants').select('*').eq('id', tenantId).maybeSingle();
+      const modo = modoWhatsApp(t);
+      const wa = modo === 'qr' ? { status: t.whatsapp_qr_status === 'conectado' ? 'conectado' : 'pendente', modo, numero: t.whatsapp_qr_numero || null }
+        : modo === 'oficial' ? { status: 'conectado', modo, numero: t.whatsapp_phone_id } : { status: 'desconectado', modo: null };
+      wa.qr_disponivel = evoConfigurada();
+      return ok(res, { data: {
+        whatsapp: wa,
+        email: t?.resend_api_key ? { status: 'conectado', fonte: 'empresa', remetente: t.email_remetente || null } : RESEND_KEY ? { status: 'conectado', fonte: 'plataforma' } : { status: 'desconectado' },
+        gemini: t?.gemini_api_key ? { status: 'conectado', fonte: 'empresa' } : GEMINI_KEY ? { status: 'conectado', fonte: 'plataforma' } : { status: 'desconectado' },
+        webhooks: t?.webhook_url ? { status: 'ativo', url: t.webhook_url } : { status: 'desconectado' },
+        sms: { status: 'em_breve' }, push: { status: 'em_breve' }
+      } });
     }
 
     if (path === '/whatsapp/bot' && method === 'PUT') {
       if (papel !== 'admin') return err(res, 'Acesso negado', 403);
       const { bot_ativo, bot_prompt } = body;
-      await sb.from('tenants').update({ config: sb.rpc ? undefined : {} }).eq('id', tenantId);
       const { data: t } = await sb.from('tenants').select('config').eq('id', tenantId).maybeSingle();
       await sb.from('tenants').update({ config: { ...(t?.config || {}), bot_ativo: bot_ativo ?? true, bot_prompt: bot_prompt || '' } }).eq('id', tenantId);
       return ok(res, { data: { atualizado: true } });
@@ -1713,14 +1869,14 @@ Quando tiver TODOS, responda SOMENTE com este JSON:
       if (!telefone || !mensagem) return err(res, 'telefone e mensagem obrigatórios');
       const { data: t } = await sb.from('tenants').select('config').eq('id', tenantId).maybeSingle();
       const smsConfig = t?.config?.sms || {};
-      if (!smsConfig.api_key) return err(res, 'SMS não configurado. Adicione sua API key de SMS nas configurações.');
-      return ok(res, { data: { enviado: true, mensagem: 'SMS integração via config.sms' } });
+      if (!smsConfig.api_key) return err(res, 'SMS ainda não está disponível no iaCRM.', 501);
+      return err(res, 'SMS ainda não está disponível no iaCRM.', 501);
     }
 
     if (path === '/sms/lote' && method === 'POST') {
       const { telefones, mensagem } = body;
       if (!telefones?.length || !mensagem) return err(res, 'telefones e mensagem obrigatórios');
-      return ok(res, { data: { agendado: true, total: telefones.length } });
+      return err(res, 'SMS ainda não está disponível no iaCRM.', 501);
     }
 
     // ═══════════════════════════════════════

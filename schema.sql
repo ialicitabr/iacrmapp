@@ -394,6 +394,12 @@ ALTER TABLE crm_jornadas ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS visitor_id TEXT;
 ALTER TABLE whatsapp_contatos ADD COLUMN IF NOT EXISTS status_atendimento TEXT DEFAULT 'aguardando';
 CREATE UNIQUE INDEX IF NOT EXISTS integracoes_tenant_plataforma_uk ON integracoes(tenant_id, plataforma);
+-- WhatsApp: modo de conexão por empresa ('qr' = QR code via Evolution API, 'oficial' = Meta Cloud API)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS whatsapp_modo TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS whatsapp_qr_status TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS whatsapp_qr_numero TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS whatsapp_qr_aceite_em TIMESTAMPTZ;   -- quando o admin aceitou o aviso de risco do QR code
+CREATE INDEX IF NOT EXISTS idx_wa_msgs_tenant_wamid ON whatsapp_mensagens(tenant_id, wamid);
 
 CREATE TABLE IF NOT EXISTS jornada_execucoes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

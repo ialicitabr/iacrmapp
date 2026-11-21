@@ -1,62 +1,71 @@
 # Servidor do WhatsApp por QR code (Evolution API)
 
 O WhatsApp por QR code precisa de um servidor **sempre ligado**: ele mantém aberta uma sessão do WhatsApp Web para cada empresa.
-A Vercel não serve para isso, porque as funções dela desligam a cada requisição. Este guia sobe o servidor numa **VM grátis da Oracle Cloud (Always Free)**.
+A Vercel não serve para isso, porque as funções dela desligam a cada requisição. Tudo o que é preciso está num arquivo só: **`instalar.sh`**.
 
-> **Aviso importante (repasse ao cliente):** a conexão por QR code usa o protocolo do WhatsApp Web, **não é a API oficial da Meta**.
-> O WhatsApp pode **banir o número**, principalmente com disparos em massa ou mensagens para quem não salvou o contato.
-> Use para atendimento e conversas iniciadas pelo cliente. Para volume alto, use a API oficial (também disponível no iaCRM).
+> **Aviso (repasse ao cliente):** a conexão por QR code usa o protocolo do WhatsApp Web, **não é a API oficial da Meta**. O WhatsApp pode **bloquear o número**, principalmente com envios em massa ou para quem não salvou o contato. O painel mostra esse aviso e registra o aceite.
 
-## 1. Criar a VM grátis (Oracle Cloud)
-1. Crie a conta em <https://signup.cloud.oracle.com>. Escolha a região **Brazil East (São Paulo)**. O cartão é só para verificação: os recursos "Always Free" não são cobrados.
-2. Menu → **Compute → Instances → Create instance**:
-   - **Image:** Canonical **Ubuntu 24.04**.
-   - **Shape:** *Ampere* → **VM.Standard.A1.Flex** com **1 OCPU e 6 GB** (dentro do Always Free).
-   - **Networking:** deixe criar a VCN e marque **Assign a public IPv4 address**.
-   - **SSH keys:** "Generate a key pair" → **baixe a chave privada** (você vai precisar dela).
-   - **Create**. Se aparecer "Out of capacity", tente outro *Availability domain* ou repita mais tarde.
-3. Abra as portas 80 e 443: na instância → **Subnet** → **Default Security List** → **Add Ingress Rules**:
-   - Source CIDR `0.0.0.0/0`, IP Protocol TCP, Destination port `80`.
-   - Repita para a porta `443`.
-4. Copie o **Public IP address** da instância.
+## Google Cloud (máquina e2-micro do plano gratuito)
+**Custo:** a máquina é grátis no plano "Always Free". O IP público custa cerca de **US$ 3,60/mês**, coberto pelos **US$ 300 de crédito dos primeiros 90 dias**. Quando o crédito acaba, o Google pede que você ative a cobrança; ele não cobra sozinho. Saída de dados: 1 GB/mês grátis (texto de WhatsApp gasta pouco).
 
-## 2. Apontar um subdomínio
-No painel onde está o domínio `iacrmapp.com.br` (Registro.br, Cloudflare…), crie um registro **A**:
-- Nome `wa`, Valor = o IP público da VM. Se usar Cloudflare, deixe a **nuvem cinza** (sem proxy).
+### 1. Conta
+1. Acesse <https://cloud.google.com/free> → **Comece gratuitamente**, com a conta Google que você usa para o iaCRM.
+2. País **Brasil**, aceite os termos e informe o cartão. Ele faz só uma verificação: no período de teste não há cobrança.
+3. Recomendado: **Faturamento → Orçamentos e alertas → Criar orçamento** de R$ 5, para ser avisado por e-mail de qualquer gasto.
 
-O resultado é `wa.iacrmapp.com.br` apontando para a VM.
+### 2. Criar a máquina
+Menu ☰ → **Compute Engine → Instâncias de VM** (na primeira vez, clique em **Ativar** a API e aguarde) → **Criar instância**:
+| Campo | Valor |
+|---|---|
+| Nome | `whatsapp-iacrm` |
+| Região | **us-east1 (Carolina do Sul)**. Só us-east1, us-central1 e us-west1 entram no plano grátis; us-east1 é a mais próxima do Brasil |
+| Série / tipo de máquina | **E2** → **e2-micro** (2 vCPU, 1 GB) |
+| Disco de inicialização → Alterar | **Ubuntu 24.04 LTS (x86/64)**, tipo **Disco permanente padrão**, **30 GB** |
+| Rede / Firewall | marque **Permitir tráfego HTTP** e **Permitir tráfego HTTPS** |
 
-## 3. Instalar (5 minutos)
-No seu computador, com a chave baixada (no Windows, use o PowerShell):
-```bash
-ssh -i caminho/da/chave.key ubuntu@IP_DA_VM
-```
-Já dentro da VM:
-```bash
-sudo apt-get update && sudo apt-get install -y git
-git clone https://github.com/ialicitabr/iacrmapp.git
-cd iacrmapp/servidor-whatsapp
-bash instalar.sh wa.iacrmapp.com.br
-```
-> O repositório é privado. Se o `git clone` pedir login, use seu usuário do GitHub e um *token* (GitHub → Settings → Developer settings → Personal access tokens), ou copie só esta pasta para a VM com `scp`.
+Clique em **Criar** e aguarde 1 minuto.
 
-Ao final, o script mostra o que cadastrar na Vercel. Para ver a chave gerada:
-```bash
-grep EVOLUTION_API_KEY ~/iacrmapp/servidor-whatsapp/.env
-```
+### 3. Fixar o IP
+Menu ☰ → **Rede VPC → Endereços IP** → na linha do IP externo da máquina → **⋮ → Promover para endereço IP estático** → nome `whatsapp-iacrm`.
+Sem isso, o IP pode mudar quando a máquina reinicia. O preço é o mesmo do IP comum.
+Anote o IP, por exemplo `34.123.45.67`.
 
-## 4. Ligar ao iaCRM (Vercel)
-Vercel → projeto **iacrm-app** → Settings → **Environment Variables** (Production):
+### 4. Apontar o subdomínio
+Onde está o DNS de `iacrmapp.com.br`, crie um registro **A**: nome **`wa`**, valor **o IP da máquina**.
+- DNS na **Vercel**: Vercel → Domains → iacrmapp.com.br → DNS Records → Add → `wa`, A, IP.
+- DNS no **Registro.br**: Domínio → DNS → Editar zona → Nova entrada → `wa`, A, IP.
+- DNS na **Cloudflare**: DNS → Add record → `wa`, A, IP, **nuvem cinza** (sem proxy).
+
+### 5. Instalar (cerca de 10 minutos)
+1. No GitHub, abra `servidor-whatsapp/instalar.sh` → botão **Download raw file** (ícone de download) e salve no computador.
+2. No Google Cloud, em **Instâncias de VM**, clique em **SSH** na linha da máquina. Abre um terminal no navegador.
+3. No terminal, clique no ícone de **engrenagem/upload → Fazer upload de arquivo** e envie o `instalar.sh`.
+4. Digite e tecle Enter:
+   ```bash
+   bash instalar.sh wa.iacrmapp.com.br
+   ```
+5. Ao final aparece o IP e o que cadastrar na Vercel. Para ver a chave:
+   ```bash
+   grep EVOLUTION_API_KEY ~/servidor-whatsapp/.env
+   ```
+
+### 6. Ligar ao iaCRM (Vercel)
+Vercel → **iacrm-app** → Settings → **Environment Variables** (Production):
 | Variável | Valor |
 |---|---|
 | `EVOLUTION_URL` | `https://wa.iacrmapp.com.br` |
-| `EVOLUTION_API_KEY` | a chave do `.env` da VM |
+| `EVOLUTION_API_KEY` | a chave do passo 5 |
+| `APP_URL` | `https://iacrmapp.com.br` |
 
-Depois faça um deploy novo (um commit seu no GitHub). No painel do iaCRM: **Integrações → WhatsApp → Conectar com QR code**.
+Publique (commit seu no GitHub) e conecte em **Integrações → WhatsApp → Conectar com QR code**.
 
-## Manutenção
-- Ver se está rodando: `cd ~/iacrmapp/servidor-whatsapp && sudo docker compose ps`
-- Logs: `sudo docker compose logs -f evolution`
-- Atualizar a Evolution: troque a versão da imagem em `docker-compose.yml` e rode `sudo docker compose up -d`
-- As sessões do WhatsApp ficam no volume `evolution_instances`. Se a VM for apagada, os clientes precisam ler o QR de novo.
-- A chave `EVOLUTION_API_KEY` dá controle total sobre todas as sessões: guarde-a só na VM e na Vercel.
+## Outros servidores
+O mesmo `instalar.sh` funciona em qualquer Ubuntu/Debian com IP público e portas 80/443 abertas, como Oracle Cloud ou uma VPS. Com 2 GB de memória ou mais, ele liga o Redis automaticamente.
+Para migrar de servidor, instale no novo, troque o registro DNS `wa` e a `EVOLUTION_API_KEY` na Vercel, e peça aos clientes para ler o QR code de novo.
+
+## Manutenção (no terminal SSH)
+- Situação: `cd ~/servidor-whatsapp && sudo docker compose ps`
+- Logs: `sudo docker compose logs -f --tail 100 evolution`
+- Reiniciar: `sudo docker compose restart`
+- Atualizar a Evolution: troque a versão da imagem em `instalar.sh` e rode-o de novo (as sessões e senhas são mantidas).
+- A `EVOLUTION_API_KEY` dá controle total sobre todas as sessões: guarde-a só na máquina e na Vercel.

@@ -1,4 +1,0 @@
-{$DOMINIO} {
-	encode gzip
-	reverse_proxy evolution:8080
-}

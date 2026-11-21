@@ -30,7 +30,7 @@ Segurança: as tabelas têm RLS ligado e nenhuma política, e o papel público (
 
 ## WhatsApp
 Cada empresa escolhe em **Integrações → WhatsApp**:
-- **QR code (padrão, mais fácil):** o celular lê um QR, como no WhatsApp Web. Usa a Evolution API num servidor sempre ligado. Veja `servidor-whatsapp/README.md` (VM grátis da Oracle Cloud). O painel mostra um aviso de risco de bloqueio, e o aceite fica registrado em `tenants.whatsapp_qr_aceite_em`.
+- **QR code (padrão, mais fácil):** o celular lê um QR, como no WhatsApp Web. Usa a Evolution API num servidor sempre ligado. Veja `servidor-whatsapp/README.md` (Google Cloud e2-micro, ou qualquer Ubuntu com IP público). O painel mostra um aviso de risco de bloqueio, e o aceite fica registrado em `tenants.whatsapp_qr_aceite_em`.
 - **API oficial da Meta:** Configurações → WhatsApp (phone_id + token). Depois de salvar, o painel mostra a URL do webhook e o token de verificação.
 
 As mensagens recebidas pelos dois caminhos entram na mesma caixa de entrada, e a ARIA responde (dá para desligar). Ela para de responder quando a conversa é passada para a equipe.
